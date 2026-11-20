@@ -334,7 +334,9 @@ h1 {
 body[data-mode="appreciation"] #photos,
 body[data-mode="appreciation"] .color-control,
 body[data-mode="appreciation"] #export,
-body[data-mode="appreciation"] .message-editor {
+body[data-mode="appreciation"] .message-editor,
+body[data-mode="appreciation"] .toolbar,
+body[data-mode="appreciation"] .camera-panel {
   display: none !important;
 }
 
@@ -1029,18 +1031,16 @@ async function createAppreciationHTML() {
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="theme-color" content="#07090e">
 <meta name="description" content="花火 · 来自朋友的一棵粒子圣诞树">
 <title>花火 · 欣赏版</title>
-<link rel="preload" href="${GESTURE_CDN_BASE}/vision_bundle.mjs" as="script" crossorigin>
-<link rel="preload" href="${GESTURE_CDN_BASE}/wasm/vision_wasm_internal.wasm" as="fetch" crossorigin>
-<link rel="preload" href="${GESTURE_CDN_BASE}/hand_landmarker.task" as="fetch" crossorigin>
 <style>${css}</style>
 </head>
 <body data-mode="appreciation" data-standalone="true">
 ${body.innerHTML}
 <script>window.HANABI_MODE="appreciation";window.HANABI_CONFIG=${configJSON};<\/script>
-<script type="module">${safeScript}<\/script>
+<script>${safeScript}<\/script>
 </body>
 </html>`;
 }
@@ -2230,6 +2230,7 @@ async function loadGestureDetector() {
 }
 
 function preloadGestureDetector() {
+  if (IS_APPRECIATION) return;
   if (!navigator.mediaDevices?.getUserMedia || !window.isSecureContext) return;
   const start = () => {
     loadGestureDetector().catch((error) => {
