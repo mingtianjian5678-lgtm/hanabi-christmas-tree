@@ -1,0 +1,2432 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width,initial-scale=1,viewport-fit=cover"
+    />
+    <meta name="theme-color" content="#07090e" />
+    <meta
+      name="description"
+      content="花火：可自由改色的金色粒子圣诞树，支持触控、摄像头手势、照片环绕与照片聚焦。"
+    />
+    <title>花火 · 自由配色圣诞树</title>
+    <style data-hanabi-style>
+:root {
+  color-scheme: dark;
+  font-family: "PingFang SC", "Microsoft YaHei", sans-serif;
+  background: #07090e;
+  color: #eee7d8;
+  --theme: #f6d88e;
+  --theme-bright: #fff1cf;
+  --theme-pale: #fff8e9;
+  --theme-deep: #9e773b;
+  --theme-soft: rgba(246, 216, 142, 0.2);
+  --theme-glow: rgba(246, 216, 142, 0.38);
+  --theme-contrast: #17130c;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  overflow: hidden;
+  background: #07090e;
+}
+
+button,
+a,
+label {
+  -webkit-tap-highlight-color: transparent;
+}
+
+button {
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+
+button:focus-visible,
+a:focus-visible,
+.color-control:focus-within {
+  outline: 2px solid var(--theme);
+  outline-offset: 5px;
+}
+
+#scene {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  touch-action: none;
+  cursor: grab;
+}
+
+#scene:active {
+  cursor: grabbing;
+}
+
+header {
+  position: fixed;
+  z-index: 5;
+  top: max(30px, env(safe-area-inset-top));
+  left: max(42px, env(safe-area-inset-left));
+  right: max(42px, env(safe-area-inset-right));
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  pointer-events: none;
+}
+
+.wordmark {
+  color: var(--theme-bright);
+  text-decoration: none;
+  font-size: 18px;
+  letter-spacing: 5px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  pointer-events: auto;
+}
+
+.wordmark > span {
+  color: var(--theme);
+  font-size: 31px;
+  line-height: 1;
+  text-shadow: 0 0 22px var(--theme-glow);
+}
+
+.wordmark i {
+  font-style: normal;
+  font-size: 9px;
+  letter-spacing: 3px;
+  color: #898276;
+  border-left: 1px solid #4a4439;
+  padding-left: 19px;
+  margin-left: 5px;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  pointer-events: auto;
+}
+
+.mode-badge {
+  padding: 7px 11px;
+  border: 1px solid var(--theme-soft);
+  border-radius: 999px;
+  background: rgba(8, 10, 15, 0.34);
+  color: color-mix(in srgb, var(--theme) 72%, #d6d1c6);
+  font-size: 9px;
+  letter-spacing: 1.5px;
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+}
+
+.icon-button {
+  display: grid;
+  place-items: center;
+  background: rgba(8, 10, 15, 0.34);
+  border: 1px solid rgba(198, 182, 143, 0.28);
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  font-size: 23px;
+  color: #c9bda2;
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+  transition: border-color 0.2s, color 0.2s, background 0.2s;
+}
+
+.icon-button:hover {
+  border-color: var(--theme);
+  color: var(--theme-pale);
+  background: var(--theme-soft);
+}
+
+.title {
+  position: fixed;
+  z-index: 2;
+  top: 11%;
+  left: 0;
+  width: 100%;
+  text-align: center;
+  pointer-events: none;
+}
+
+.eyebrow {
+  color: color-mix(in srgb, var(--theme) 58%, #8e887c);
+  font-size: 9px;
+  letter-spacing: 5px;
+  margin: 0 0 14px;
+}
+
+h1 {
+  font-family: Georgia, "Times New Roman", serif;
+  font-weight: 400;
+  font-size: clamp(38px, 4.5vw, 67px);
+  letter-spacing: 1px;
+  margin: 0;
+  background: linear-gradient(
+    110deg,
+    var(--theme-deep),
+    var(--theme-pale) 45%,
+    var(--theme)
+  );
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  filter: drop-shadow(0 0 28px rgba(0, 0, 0, 0.7));
+}
+
+.wish {
+  color: #9b9282;
+  font-size: 11px;
+  letter-spacing: 6px;
+  margin-top: 15px;
+}
+
+.scene-label {
+  position: fixed;
+  z-index: 3;
+  left: max(42px, env(safe-area-inset-left));
+  top: 50%;
+  writing-mode: vertical-rl;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: color-mix(in srgb, var(--theme) 48%, #706b62);
+  font-size: 10px;
+  letter-spacing: 3px;
+  pointer-events: none;
+}
+
+.live-dot {
+  width: 4px;
+  height: 4px;
+  background: var(--theme);
+  border-radius: 50%;
+  box-shadow: 0 0 10px var(--theme);
+}
+
+.toolbar {
+  position: fixed;
+  z-index: 10;
+  bottom: 112px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 7px;
+  white-space: nowrap;
+  background: rgba(16, 17, 23, 0.78);
+  border: 1px solid var(--theme-soft);
+  padding: 7px;
+  border-radius: 15px;
+  -webkit-backdrop-filter: blur(18px);
+  backdrop-filter: blur(18px);
+  box-shadow: 0 18px 55px rgba(0, 0, 0, 0.36);
+}
+
+.toolbar button,
+.color-control {
+  font-size: 11px;
+  letter-spacing: 1px;
+  padding: 12px 16px;
+  border: 1px solid transparent;
+  background: transparent;
+  border-radius: 9px;
+  color: #ccc1ac;
+  transition: background 0.2s, color 0.2s, border-color 0.2s;
+}
+
+.toolbar button:hover,
+.color-control:hover {
+  background: var(--theme-soft);
+  color: var(--theme-pale);
+}
+
+.toolbar button.primary {
+  background: var(--theme);
+  color: var(--theme-contrast);
+  box-shadow: 0 0 24px var(--theme-soft);
+}
+
+.toolbar button.primary:hover {
+  background: var(--theme-bright);
+  color: var(--theme-contrast);
+}
+
+.toolbar button[aria-pressed="true"] {
+  background: var(--theme-soft);
+  color: var(--theme-pale);
+}
+
+.toolbar #export {
+  border-color: var(--theme-soft);
+  background: var(--theme-soft);
+  color: var(--theme-pale);
+}
+
+.toolbar button:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+
+.color-control {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  cursor: pointer;
+  overflow: hidden;
+}
+
+.color-control::before {
+  content: "";
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--theme);
+  box-shadow: 0 0 13px var(--theme-glow);
+}
+
+#color-picker {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+}
+
+body[data-mode="appreciation"] #photos,
+body[data-mode="appreciation"] .color-control,
+body[data-mode="appreciation"] #export,
+body[data-mode="appreciation"] .message-editor {
+  display: none !important;
+}
+
+.message-editor {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1 0 100%;
+  width: 100%;
+  max-height: 0;
+  padding: 0 8px;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  background: transparent;
+  box-shadow: none;
+  opacity: 0;
+  overflow: hidden;
+  pointer-events: none;
+  transition:
+    opacity 0.28s ease,
+    max-height 0.28s ease,
+    padding 0.28s ease,
+    border-color 0.2s,
+    background 0.2s;
+}
+
+body[data-spread="spread"] .message-editor {
+  max-height: 45px;
+  padding: 4px 8px 4px 13px;
+  border-color: var(--theme-soft);
+  background: rgba(12, 13, 18, 0.88);
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.photo-focused .message-editor {
+  max-height: 0 !important;
+  padding-block: 0 !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+
+.message-editor > span {
+  color: var(--theme);
+  text-shadow: 0 0 12px var(--theme-glow);
+  font-size: 13px;
+}
+
+#particle-text-input {
+  width: 100%;
+  min-width: 0;
+  padding: 8px 4px;
+  border: 0;
+  outline: 0;
+  color: var(--theme-pale);
+  background: transparent;
+  text-align: center;
+  font: inherit;
+  font-size: 13px;
+  letter-spacing: 2px;
+}
+
+#particle-text-input::placeholder {
+  color: #706b62;
+  letter-spacing: 1px;
+}
+
+footer {
+  position: fixed;
+  z-index: 2;
+  bottom: 24px;
+  left: 20px;
+  right: 20px;
+  text-align: center;
+  pointer-events: none;
+}
+
+.instructions {
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+  color: #b3aa98;
+  font-size: 10px;
+  letter-spacing: 1px;
+}
+
+.instructions b {
+  color: #6a604d;
+  font-weight: 400;
+}
+
+#hint {
+  max-width: 720px;
+  color: #77746d;
+  font-size: 10px;
+  letter-spacing: 1px;
+  line-height: 1.7;
+  margin: 12px auto 20px;
+}
+
+small {
+  color: #575247;
+  font-size: 8px;
+  letter-spacing: 3px;
+}
+
+small span {
+  color: var(--theme-deep);
+  margin: 0 12px;
+}
+
+.camera-panel {
+  position: fixed;
+  z-index: 8;
+  right: 32px;
+  bottom: 205px;
+  width: 160px;
+  border: 1px solid var(--theme-soft);
+  border-radius: 10px;
+  overflow: hidden;
+  background: #15161c;
+  box-shadow: 0 14px 40px rgba(0, 0, 0, 0.45);
+}
+
+.camera-panel video {
+  width: 100%;
+  display: block;
+  transform: scaleX(-1);
+  opacity: 0.8;
+}
+
+.camera-panel div {
+  padding: 8px;
+  color: #d9c8a8;
+  font-size: 10px;
+  text-align: center;
+}
+
+.camera-panel select {
+  width: calc(100% - 12px);
+  margin: 0 6px 6px;
+  padding: 5px 6px;
+  border: 1px solid var(--theme-soft);
+  border-radius: 5px;
+  color: #e9dfc8;
+  background: #11131a;
+  font-size: 9px;
+}
+
+#toast {
+  position: fixed;
+  z-index: 20;
+  top: 95px;
+  left: 50%;
+  transform: translate(-50%, -12px);
+  max-width: 90%;
+  padding: 12px 20px;
+  border: 1px solid var(--theme-soft);
+  border-radius: 9px;
+  background: rgba(28, 25, 20, 0.94);
+  color: #f0e7d7;
+  text-align: center;
+  font-size: 12px;
+  line-height: 1.7;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s, transform 0.25s;
+}
+
+#toast.show {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+
+@media (max-width: 760px) {
+  header {
+    top: max(22px, env(safe-area-inset-top));
+    left: max(22px, env(safe-area-inset-left));
+    right: max(22px, env(safe-area-inset-right));
+  }
+
+  .wordmark i {
+    display: none;
+  }
+
+  .title {
+    top: 13%;
+  }
+
+  .eyebrow {
+    font-size: 8px;
+    letter-spacing: 3px;
+  }
+
+  h1 {
+    font-size: 40px;
+  }
+
+  .wish {
+    letter-spacing: 4px;
+  }
+
+  .scene-label {
+    left: 15px;
+    font-size: 9px;
+  }
+
+  .toolbar {
+    bottom: 125px;
+    width: calc(100% - 24px);
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 5px;
+    padding: 6px;
+  }
+
+  .message-editor {
+    grid-column: 1 / -1;
+    width: 100%;
+  }
+
+  #particle-text-input {
+    font-size: 12px;
+  }
+
+  .mode-badge {
+    padding: 6px 9px;
+    font-size: 8px;
+    letter-spacing: 1px;
+  }
+
+  .toolbar button,
+  .color-control {
+    justify-content: center;
+    min-height: 43px;
+    padding: 9px 7px;
+    font-size: 10px;
+    letter-spacing: 0;
+    text-align: center;
+  }
+
+  .instructions {
+    gap: 7px;
+    font-size: 9px;
+    letter-spacing: 0;
+  }
+
+  footer {
+    bottom: max(22px, env(safe-area-inset-bottom));
+  }
+
+  #hint {
+    max-width: 310px;
+    margin: 10px auto 16px;
+    font-size: 9px;
+    letter-spacing: 0;
+  }
+
+  small {
+    font-size: 7px;
+    letter-spacing: 1.5px;
+  }
+
+  .camera-panel {
+    right: 18px;
+    bottom: 212px;
+    width: 110px;
+  }
+
+  .camera-panel div {
+    font-size: 9px;
+  }
+}
+
+@media (max-height: 680px) {
+  .title {
+    top: 9%;
+  }
+
+  h1 {
+    font-size: clamp(34px, 6vw, 52px);
+  }
+
+  .toolbar {
+    bottom: 96px;
+  }
+
+  footer {
+    bottom: 12px;
+  }
+
+  #hint {
+    margin: 7px auto 10px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    transition: none !important;
+  }
+}
+
+</style>
+  </head>
+  <body data-mode="developer">
+    <canvas
+      id="scene"
+      aria-label="可自由改色的粒子圣诞树。拖动旋转，双击切换照片环绕，轻触照片聚焦。"
+    ></canvas>
+
+    <header>
+      <a class="wordmark" href="./"><span>✧</span> 花火 <i>WINTER COLLECTION</i></a>
+      <div class="header-actions">
+        <span id="mode-badge" class="mode-badge">开发者模式</span>
+        <button id="fullscreen" class="icon-button" aria-label="切换全屏" title="全屏">⛶</button>
+      </div>
+    </header>
+
+    <main class="title">
+      <p class="eyebrow">A LITTLE MAGIC, JUST FOR YOU</p>
+      <h1>Merry Christmas</h1>
+      <p class="wish">把心愿，藏进每一颗星光</p>
+    </main>
+
+    <div class="scene-label">
+      <span class="live-dot"></span>
+      <span id="state-label">星光正在聚拢</span>
+    </div>
+
+    <aside class="camera-panel" hidden>
+      <video id="camera" autoplay playsinline muted></video>
+      <div id="camera-state">等待手势</div>
+      <select id="camera-device" aria-label="选择摄像头" hidden></select>
+    </aside>
+
+    <div class="toolbar">
+      <div class="message-editor">
+        <span aria-hidden="true">✦</span>
+        <input
+          id="particle-text-input"
+          type="text"
+          maxlength="20"
+          value="❤"
+          aria-label="编辑粒子文字"
+          placeholder="输入文字，例如 ❤"
+        />
+      </div>
+      <button id="camera-toggle" class="primary"><span>◎</span> 开启手势</button>
+      <button id="scatter">✧ 散开星光</button>
+      <button id="photos">▧ 放入照片</button>
+      <button id="demo" aria-pressed="false">↻ 自动演示</button>
+      <label class="color-control" title="选择圣诞树颜色">
+        <span>改颜色</span>
+        <input id="color-picker" type="color" value="#f6d88e" aria-label="自由选择圣诞树颜色" />
+      </label>
+      <button id="export" class="export-button">保存欣赏版</button>
+      <input id="photo-input" type="file" accept="image/*" multiple hidden />
+    </div>
+
+    <footer>
+      <div class="instructions">
+        <span>左右挥手掌 · 旋转照片</span>
+        <b>·</b>
+        <span>散开后捏合 · 拿走高亮照片</span>
+        <b>·</b>
+        <span>张开/握拳 · 散开/聚拢</span>
+      </div>
+      <p id="hint" role="status" aria-live="polite">
+        双击画面切换，拖动旋转，滚轮缩放；轻触照片查看
+      </p>
+      <small>MADE OF STARDUST &amp; LITTLE WISHES <span>✦</span> 2026</small>
+    </footer>
+
+    <div id="toast" role="status" aria-live="polite"></div>
+    <script>window.HANABI_CONFIG = { standalone: true };</script>
+<script type="module" data-hanabi-app>
+const $ = (selector) => document.querySelector(selector);
+const MODE =
+  window.HANABI_MODE ||
+  new URLSearchParams(location.search).get("mode") ||
+  document.body.dataset.mode ||
+  "developer";
+const IS_APPRECIATION = MODE === "appreciation";
+const BOOT_CONFIG = window.HANABI_CONFIG || null;
+const DRAFT_KEY = "hanabi-developer-draft-v1";
+const GESTURE_CDN_BASE =
+  "https://cdn.jsdelivr.net/gh/mingtianjian5678-lgtm/hanabi-christmas-tree@hanabi-model-v1/vendor";
+document.body.dataset.mode = MODE;
+
+let storedDraft = null;
+try {
+  storedDraft = JSON.parse(localStorage.getItem(DRAFT_KEY) || "null");
+} catch {}
+const DEFAULT_MESSAGE = "❤";
+let particleText = BOOT_CONFIG?.message || storedDraft?.message || DEFAULT_MESSAGE;
+let textParticles = [];
+let textMaskWidth = 1;
+let textMaskHeight = 1;
+
+const landmarkDistance = (points, a, b) =>
+  Math.hypot(
+    points[a].x - points[b].x,
+    points[a].y - points[b].y,
+    (points[a].z ?? 0) - (points[b].z ?? 0),
+  );
+
+const landmarkAngle = (points, a, b, c) => {
+  const ab = {
+    x: points[a].x - points[b].x,
+    y: points[a].y - points[b].y,
+    z: (points[a].z ?? 0) - (points[b].z ?? 0),
+  };
+  const cb = {
+    x: points[c].x - points[b].x,
+    y: points[c].y - points[b].y,
+    z: (points[c].z ?? 0) - (points[b].z ?? 0),
+  };
+  const dot = ab.x * cb.x + ab.y * cb.y + ab.z * cb.z;
+  const size =
+    Math.hypot(ab.x, ab.y, ab.z) *
+    Math.hypot(cb.x, cb.y, cb.z);
+  return (Math.acos(Math.max(-1, Math.min(1, dot / Math.max(size, 1e-6)))) * 180) / Math.PI;
+};
+
+function classifyHand(points) {
+  if (!points || points.length < 21) {
+    return { gesture: "none", extended: 0, pinchRatio: 1, curled: 0 };
+  }
+  const palmSize = Math.max(landmarkDistance(points, 0, 9), 0.02);
+  const pinchRatio = landmarkDistance(points, 4, 8) / palmSize;
+  const fingers = [
+    [5, 6, 7, 8],
+    [9, 10, 11, 12],
+    [13, 14, 15, 16],
+    [17, 18, 19, 20],
+  ];
+  const extendedFingers = fingers.map(
+    ([mcp, pip, dip, tip]) =>
+      landmarkAngle(points, mcp, pip, dip) > 145 &&
+      landmarkAngle(points, pip, dip, tip) > 145 &&
+      landmarkDistance(points, tip, 0) >
+        landmarkDistance(points, pip, 0) * 1.06,
+  );
+  const extended = extendedFingers.filter(Boolean).length;
+  const curledFingers = fingers.map(([mcp, , , tip]) => {
+    const tipToMcp = landmarkDistance(points, tip, mcp) / palmSize;
+    const tipToWrist = landmarkDistance(points, tip, 0) / palmSize;
+    return tipToMcp < 0.46 && tipToWrist < 1.55;
+  });
+  const curled = curledFingers.filter(Boolean).length;
+  const otherFingersCurled = curledFingers.slice(1).filter(Boolean).length;
+  const otherFingersExtended = extendedFingers.slice(1).filter(Boolean).length;
+  let gesture = "move";
+  if (otherFingersCurled >= 2) gesture = "fist";
+  else if (pinchRatio < 0.34) {
+    gesture = otherFingersExtended >= 2 ? "pinch" : "fist";
+  }
+  else if (extended >= 3) gesture = "open";
+  else if (extended <= 1) gesture = "fist";
+  return { gesture, extended, pinchRatio, curled, otherFingersExtended };
+}
+const canvas = $("#scene");
+const ctx = canvas.getContext("2d");
+const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
+const COLOR_KEY = "hanabi-theme-color";
+const LEGACY_COLOR_KEY = "christmas-tree-theme-color";
+const CAMERA_DEVICE_KEY = "hanabi-camera-device";
+const DEFAULT_COLOR = "#f6d88e";
+
+let width = innerWidth;
+let height = innerHeight;
+let dpr = 1;
+let spread = 0;
+let targetSpread = 0;
+let rotation = 0;
+let targetRotation = 0;
+let zoom = 1;
+let demo = false;
+let elapsed = 0;
+let lastTime = 0;
+let pointer = null;
+let dragged = false;
+let lastTap = 0;
+let lastTapX = 0;
+let lastTapY = 0;
+let photoHitboxes = [];
+let photoCursor = 0;
+let focusedPhoto = -1;
+let focusDrive = 0;
+let focusMove = 0;
+let focusScale = 0;
+let focusClosing = false;
+let focusOrigin = null;
+let focusGestureGuardUntil = 0;
+let handHoveredPhoto = -1;
+let previousHandX = null;
+let lastHandSeenAt = 0;
+const handCursor = { active: false, x: 0, y: 0 };
+let toastTimer;
+
+const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
+const lerp = (start, end, progress) => start + (end - start) * progress;
+function resize() {
+  width = innerWidth;
+  height = innerHeight;
+  dpr = Math.min(devicePixelRatio || 1, 2);
+  canvas.width = width * dpr;
+  canvas.height = height * dpr;
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  rebuildParticleText();
+}
+
+function parseHex(value) {
+  const normalized = /^#[0-9a-f]{6}$/i.test(value) ? value.slice(1) : DEFAULT_COLOR.slice(1);
+  const number = Number.parseInt(normalized, 16);
+  return {
+    r: (number >> 16) & 255,
+    g: (number >> 8) & 255,
+    b: number & 255,
+  };
+}
+
+function rgbToHex({ r, g, b }) {
+  return `#${[r, g, b]
+    .map((channel) => clamp(Math.round(channel), 0, 255).toString(16).padStart(2, "0"))
+    .join("")}`;
+}
+
+function mixHex(base, target, amount) {
+  const from = parseHex(base);
+  const to = parseHex(target);
+  return rgbToHex({
+    r: lerp(from.r, to.r, amount),
+    g: lerp(from.g, to.g, amount),
+    b: lerp(from.b, to.b, amount),
+  });
+}
+
+function rgba(hex, alpha) {
+  const { r, g, b } = parseHex(hex);
+  return `rgba(${r},${g},${b},${alpha})`;
+}
+
+function luminance(hex) {
+  const { r, g, b } = parseHex(hex);
+  return (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255;
+}
+
+const theme = {
+  base: DEFAULT_COLOR,
+  bright: mixHex(DEFAULT_COLOR, "#ffffff", 0.52),
+  pale: mixHex(DEFAULT_COLOR, "#ffffff", 0.8),
+  deep: mixHex(DEFAULT_COLOR, "#5f4318", 0.42),
+  dark: mixHex(DEFAULT_COLOR, "#17120b", 0.68),
+};
+let sprites = [];
+
+function buildSprites() {
+  const spriteColors = [
+    theme.base,
+    theme.bright,
+    theme.deep,
+    theme.pale,
+    mixHex(theme.base, "#f3a34b", 0.34),
+  ];
+
+  sprites = spriteColors.map((color) => {
+    const sprite = document.createElement("canvas");
+    sprite.width = sprite.height = 48;
+    const paint = sprite.getContext("2d");
+    const gradient = paint.createRadialGradient(24, 24, 0, 24, 24, 24);
+    gradient.addColorStop(0, "#ffffff");
+    gradient.addColorStop(0.1, theme.pale);
+    gradient.addColorStop(0.27, color);
+    gradient.addColorStop(0.62, rgba(color, 0.42));
+    gradient.addColorStop(1, rgba(color, 0));
+    paint.fillStyle = gradient;
+    paint.fillRect(0, 0, 48, 48);
+    return sprite;
+  });
+}
+
+function applyTheme(hex, { persist = true, announce = false } = {}) {
+  const safeColor = /^#[0-9a-f]{6}$/i.test(hex) ? hex : DEFAULT_COLOR;
+  theme.base = safeColor;
+  theme.bright = mixHex(safeColor, "#ffffff", 0.52);
+  theme.pale = mixHex(safeColor, "#ffffff", 0.8);
+  theme.deep = mixHex(safeColor, "#5f4318", 0.42);
+  theme.dark = mixHex(safeColor, "#17120b", 0.68);
+  buildSprites();
+
+  const root = document.documentElement;
+  root.style.setProperty("--theme", theme.base);
+  root.style.setProperty("--theme-bright", theme.bright);
+  root.style.setProperty("--theme-pale", theme.pale);
+  root.style.setProperty("--theme-deep", theme.deep);
+  root.style.setProperty("--theme-soft", rgba(theme.base, 0.2));
+  root.style.setProperty("--theme-glow", rgba(theme.base, 0.38));
+  root.style.setProperty("--theme-contrast", luminance(theme.base) > 0.58 ? "#17130c" : "#fffaf0");
+  $("#color-picker").value = safeColor;
+
+  if (persist) {
+    try {
+      localStorage.setItem(COLOR_KEY, safeColor);
+    } catch {}
+  }
+  if (announce) toast(`已切换为 ${safeColor.toUpperCase()} 花火色`);
+}
+
+function serializePhotos() {
+  return photos.map((photo) => ({
+    src: photo.image.src,
+    phase: photo.phase,
+    y: photo.y,
+    tilt: photo.tilt,
+  }));
+}
+
+function saveDeveloperDraft() {
+  if (IS_APPRECIATION) return false;
+  try {
+    localStorage.setItem(
+      DRAFT_KEY,
+      JSON.stringify({
+        version: 1,
+        color: theme.base,
+        message: particleText,
+        photos: serializePhotos(),
+        updatedAt: Date.now(),
+      }),
+    );
+    return true;
+  } catch (error) {
+    console.warn("Developer draft could not be saved:", error);
+    toast("照片较多，浏览器自动保存空间不足；仍可直接导出欣赏版", 7000);
+    return false;
+  }
+}
+
+async function createAppreciationHTML() {
+  const inlineStyle = document.querySelector("style[data-hanabi-style]");
+  const inlineScript = document.querySelector("script[data-hanabi-app]");
+  const [css, script] =
+    inlineStyle && inlineScript
+      ? [inlineStyle.textContent, inlineScript.textContent]
+      : await Promise.all([
+          fetch("style.css?v=3").then((response) => response.text()),
+          fetch("app.js?v=3").then((response) => response.text()),
+        ]);
+  const body = document.body.cloneNode(true);
+  body.querySelectorAll("script").forEach((node) => node.remove());
+  body.setAttribute("data-mode", "appreciation");
+  body.setAttribute("data-standalone", "true");
+  body.querySelector("#mode-badge").textContent = "欣赏模式";
+  const toastNode = body.querySelector("#toast");
+  toastNode.textContent = "";
+  toastNode.classList.remove("show");
+
+  const config = {
+    mode: "appreciation",
+    standalone: true,
+    modelUrl: `${GESTURE_CDN_BASE}/hand_landmarker.task`,
+    color: theme.base,
+    message: particleText,
+    photos: serializePhotos(),
+    createdAt: new Date().toISOString(),
+  };
+  const configJSON = JSON.stringify(config).replaceAll("<", "\\u003c");
+  const safeScript = script.replace(/<\/script/gi, "<\\/script");
+
+  return `<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#07090e">
+<meta name="description" content="花火 · 来自朋友的一棵粒子圣诞树">
+<title>花火 · 欣赏版</title>
+<link rel="preload" href="${GESTURE_CDN_BASE}/vision_bundle.mjs" as="script" crossorigin>
+<link rel="preload" href="${GESTURE_CDN_BASE}/wasm/vision_wasm_internal.wasm" as="fetch" crossorigin>
+<link rel="preload" href="${GESTURE_CDN_BASE}/hand_landmarker.task" as="fetch" crossorigin>
+<style>${css}</style>
+</head>
+<body data-mode="appreciation" data-standalone="true">
+${body.innerHTML}
+<script>window.HANABI_MODE="appreciation";window.HANABI_CONFIG=${configJSON};<\/script>
+<script type="module">${safeScript}<\/script>
+</body>
+</html>`;
+}
+
+async function exportAppreciation() {
+  try {
+    const html = await createAppreciationHTML();
+    const blob = new Blob([html], { type: "text/html;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    const now = new Date();
+    const date = [
+      now.getFullYear(),
+      String(now.getMonth() + 1).padStart(2, "0"),
+      String(now.getDate()).padStart(2, "0"),
+    ].join("");
+    link.href = url;
+    link.download = `花火_欣赏版_${date}.html`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    toast("欣赏版 HTML 已生成，可以直接发送给微信好友");
+  } catch (error) {
+    console.error("Export failed:", error);
+    toast("欣赏版生成失败，请刷新页面后重试");
+  }
+}
+
+addEventListener("resize", resize);
+resize();
+
+let seed = 24;
+const rand = () => {
+  seed = (seed * 1664525 + 1013904223) >>> 0;
+  return seed / 4294967296;
+};
+
+const points = Array.from({ length: width < 600 ? 1900 : 2850 }, (_, index) => {
+  const t = rand();
+  const y = t * 3.8 - 1.85;
+  const angle = rand() * Math.PI * 2;
+  const radius = (1 - t) * 1.38 * (index % 3 === 0 ? 0.92 : Math.sqrt(rand()));
+  const scatterAngle = rand() * Math.PI * 2;
+  const scatterY = rand() * 2 - 1;
+  const scatterRadius = 1.2 + Math.pow(rand(), 0.4) * 2.9;
+  return {
+    x: Math.cos(angle) * radius,
+    y,
+    z: Math.sin(angle) * radius,
+    sx: Math.cos(scatterAngle) * Math.sqrt(1 - scatterY * scatterY) * scatterRadius,
+    sy: scatterY * scatterRadius * 0.78,
+    sz: Math.sin(scatterAngle) * Math.sqrt(1 - scatterY * scatterY) * scatterRadius,
+    size: 0.6 + rand() * 1.8,
+    color: Math.floor(rand() * 5),
+    phase: rand() * Math.PI * 2,
+  };
+});
+
+const garland = [];
+const garlandCount = width < 600 ? 420 : 620;
+for (let index = 0; index < garlandCount; index++) {
+  const t = index / garlandCount;
+  const angle = t * Math.PI * 21;
+  const radius = (1 - t) * 1.4;
+  const scatterSeed = rand();
+  const scatterAngle = scatterSeed * Math.PI * 4;
+  const scatterRadius = 1.4 + scatterSeed * 2.5;
+  const point = {
+    x: Math.cos(angle) * radius,
+    y: t * 3.8 - 1.85,
+    z: Math.sin(angle) * radius,
+    sx: Math.cos(scatterAngle) * scatterRadius,
+    sy: (t - 0.5) * 4.7,
+    sz: Math.sin(scatterAngle) * scatterRadius,
+    size: 1.28,
+    color: 1,
+    phase: rand() * Math.PI * 2,
+    garland: true,
+  };
+  points.push(point);
+  garland.push(point);
+}
+
+const snow = Array.from({ length: 135 }, () => ({
+  x: rand(),
+  y: rand(),
+  radius: 0.35 + rand() * 1.15,
+  speed: 0.01 + rand() * 0.028,
+  phase: rand() * Math.PI * 2,
+}));
+
+function postcard(index) {
+  const card = document.createElement("canvas");
+  card.width = 400;
+  card.height = 470;
+  const paint = card.getContext("2d");
+  const palettes = [
+    ["#152933", "#588184"],
+    ["#27213d", "#aa7890"],
+    ["#413324", "#ac8d61"],
+    ["#182d36", "#5978a6"],
+  ];
+  const [dark, light] = palettes[index % palettes.length];
+  const gradient = paint.createLinearGradient(0, 0, 0, 420);
+  gradient.addColorStop(0, dark);
+  gradient.addColorStop(1, light);
+  paint.fillStyle = gradient;
+  paint.fillRect(0, 0, 400, 470);
+  paint.fillStyle = "#fff1cf";
+  paint.beginPath();
+  paint.arc(285, 92, 29, 0, 7);
+  paint.fill();
+  for (let dot = 0; dot < 55; dot++) {
+    paint.globalAlpha = 0.2 + rand() * 0.7;
+    paint.beginPath();
+    paint.arc(rand() * 400, rand() * 330, rand() * 1.7 + 0.5, 0, 7);
+    paint.fill();
+  }
+  paint.globalAlpha = 1;
+  for (let layer = 0; layer < 3; layer++) {
+    paint.fillStyle = ["#cad4d2", "#e4e6d9", "#f7edda"][layer];
+    paint.beginPath();
+    paint.moveTo(0, 320 + layer * 25);
+    for (let x = 0; x <= 400; x += 20) {
+      paint.lineTo(x, 300 + layer * 30 + Math.sin(x * 0.012 + layer * 2) * 30);
+    }
+    paint.lineTo(400, 470);
+    paint.lineTo(0, 470);
+    paint.fill();
+  }
+  for (let tree = 0; tree < 5; tree++) {
+    const x = 35 + tree * 73;
+    const y = 335 + Math.sin(tree * 2 + index) * 17;
+    const size = 25 + rand() * 30;
+    paint.fillStyle = "#1c3839";
+    paint.beginPath();
+    paint.moveTo(x, y - size);
+    paint.lineTo(x - size * 0.42, y + 12);
+    paint.lineTo(x + size * 0.42, y + 12);
+    paint.fill();
+    paint.fillRect(x - 2, y, 4, 20);
+  }
+  paint.fillStyle = "#f8edcd";
+  paint.font = "italic 24px Georgia";
+  paint.textAlign = "center";
+  paint.fillText(["A winter wish", "Silent night", "Little moments", "Stay golden"][index % 4], 200, 440);
+
+  const image = new Image();
+  image.src = card.toDataURL();
+  return image;
+}
+
+function layoutPhotos(images) {
+  return images.map((image, index) => {
+    const count = images.length;
+    const t = count === 1 ? 0.5 : index / (count - 1);
+    return {
+      image,
+      phase: (index / count) * Math.PI * 2 * 1.58,
+      y: -1.5 + t * 3,
+      tilt: Math.sin(index * 1.7) * 0.1,
+    };
+  });
+}
+
+function imageFromConfig(source) {
+  const image = new Image();
+  image.src = source;
+  return image;
+}
+
+function photosFromConfig(items) {
+  if (!Array.isArray(items) || !items.length) return null;
+  return items.slice(0, 12).map((item, index, list) => {
+    const count = list.length;
+    return {
+      image: imageFromConfig(item.src),
+      phase: Number.isFinite(item.phase)
+        ? item.phase
+        : (index / count) * Math.PI * 2 * 1.58,
+      y: Number.isFinite(item.y) ? item.y : -1.5 + (index / Math.max(1, count - 1)) * 3,
+      tilt: Number.isFinite(item.tilt) ? item.tilt : Math.sin(index * 1.7) * 0.1,
+    };
+  });
+}
+
+const initialPhotoConfig = BOOT_CONFIG?.photos || storedDraft?.photos;
+let photos =
+  photosFromConfig(initialPhotoConfig) ||
+  layoutPhotos(Array.from({ length: 8 }, (_, index) => postcard(index)));
+
+function project(x, y, z) {
+  const cos = Math.cos(rotation);
+  const sin = Math.sin(rotation);
+  const rotatedX = x * cos + z * sin;
+  const rotatedZ = z * cos - x * sin;
+  const scale = Math.min(width * 0.29, height * 0.112) * zoom;
+  const depth = 6 / (6 - rotatedZ * 0.32);
+  return {
+    x: width / 2 + rotatedX * scale * depth,
+    y: height * 0.53 - y * scale * depth,
+    z: rotatedZ,
+    scale: scale * depth,
+  };
+}
+
+function drawStar(x, y, radius, alpha = 1) {
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.globalAlpha = alpha;
+  ctx.shadowColor = theme.base;
+  ctx.shadowBlur = 28;
+  ctx.fillStyle = theme.pale;
+  ctx.beginPath();
+  for (let index = 0; index < 10; index++) {
+    const angle = (index * Math.PI) / 5 - Math.PI / 2;
+    const size = index % 2 ? radius * 0.43 : radius;
+    ctx.lineTo(Math.cos(angle) * size, Math.sin(angle) * size);
+  }
+  ctx.closePath();
+  ctx.fill();
+  ctx.restore();
+}
+
+function drawPhoto(image, x, y, size, tilt, alpha = 1, aspect = 1.13) {
+  if (!image.complete) return;
+  const photoHeight = size * aspect;
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.rotate(tilt);
+  ctx.globalAlpha = alpha;
+  ctx.shadowColor = theme.base;
+  ctx.shadowBlur = 15;
+  ctx.fillStyle = theme.deep;
+  ctx.fillRect(-size / 2 - 3, -photoHeight / 2 - 3, size + 6, photoHeight + 6);
+  ctx.shadowBlur = 0;
+  ctx.fillStyle = theme.pale;
+  ctx.fillRect(-size / 2 - 1, -photoHeight / 2 - 1, size + 2, photoHeight + 2);
+  const imageWidth = image.naturalWidth;
+  const imageHeight = image.naturalHeight;
+  const ratio = Math.max(size / imageWidth, photoHeight / imageHeight);
+  const cropWidth = size / ratio;
+  const cropHeight = photoHeight / ratio;
+  ctx.drawImage(
+    image,
+    (imageWidth - cropWidth) / 2,
+    (imageHeight - cropHeight) / 2,
+    cropWidth,
+    cropHeight,
+    -size / 2,
+    -photoHeight / 2,
+    size,
+    photoHeight,
+  );
+  ctx.restore();
+}
+
+function drawFocusedPhoto(image, x, y, frameSize, alpha = 1) {
+  if (!image.complete) return;
+  const half = frameSize / 2;
+  const imageWidth = image.naturalWidth;
+  const imageHeight = image.naturalHeight;
+  const cropSize = Math.min(imageWidth, imageHeight);
+
+  ctx.save();
+  ctx.globalAlpha = alpha;
+  const halo = ctx.createRadialGradient(x, y, frameSize * 0.35, x, y, frameSize * 0.86);
+  halo.addColorStop(0, rgba(theme.base, 0.04));
+  halo.addColorStop(0.62, rgba(theme.base, 0.12));
+  halo.addColorStop(1, rgba(theme.base, 0));
+  ctx.fillStyle = halo;
+  ctx.fillRect(x - frameSize, y - frameSize, frameSize * 2, frameSize * 2);
+
+  ctx.shadowColor = theme.base;
+  ctx.shadowBlur = 28;
+  ctx.drawImage(
+    image,
+    (imageWidth - cropSize) / 2,
+    (imageHeight - cropSize) / 2,
+    cropSize,
+    cropSize,
+    x - half,
+    y - half,
+    frameSize,
+    frameSize,
+  );
+
+  ctx.shadowBlur = 0;
+  ctx.globalCompositeOperation = "lighter";
+  const gap = Math.max(5, frameSize * 0.012);
+  const edge = half + gap;
+  const edgeLength = edge * 2;
+
+  ctx.save();
+  ctx.strokeStyle = rgba(theme.bright, 0.78 * alpha);
+  ctx.shadowColor = theme.base;
+  ctx.shadowBlur = Math.max(16, frameSize * 0.05);
+  ctx.lineWidth = Math.max(1.5, frameSize * 0.0045);
+  ctx.strokeRect(x - edge, y - edge, edgeLength, edgeLength);
+  ctx.strokeStyle = rgba(theme.pale, 0.52 * alpha);
+  ctx.lineWidth = Math.max(0.8, frameSize * 0.0018);
+  ctx.strokeRect(x - edge, y - edge, edgeLength, edgeLength);
+  ctx.restore();
+
+  const hash = (value) => {
+    const result = Math.sin(value * 12.9898 + 78.233) * 43758.5453;
+    return result - Math.floor(result);
+  };
+  const particleCount = width < 600 ? 150 : 260;
+  for (let index = 0; index < particleCount; index++) {
+    const side = Math.floor(hash(index * 1.17 + 2.4) * 4);
+    const along = lerp(
+      -edge,
+      edge,
+      hash(index * 2.31 + 7.6) + (hash(index * 8.3) - 0.5) * 0.04,
+    );
+    const spread = frameSize * Math.pow(hash(index * 4.73 + 1.3), 1.7) * 0.15;
+    const offset = gap + spread;
+    let particleX;
+    let particleY;
+    if (side === 0) {
+      particleX = along;
+      particleY = -half - offset;
+    } else if (side === 1) {
+      particleX = half + offset;
+      particleY = along;
+    } else if (side === 2) {
+      particleX = along;
+      particleY = half + offset;
+    } else {
+      particleX = -half - offset;
+      particleY = along;
+    }
+
+    const drift = Math.sin(elapsed * 1.4 + index * 0.83) * 2.2;
+    particleX += side === 0 || side === 2 ? drift : 0;
+    particleY += side === 1 || side === 3 ? drift : 0;
+    const shimmer = 0.55 + 0.45 * Math.sin(elapsed * 2.25 + index * 1.31);
+    const size = clamp(
+      1 + Math.pow(hash(index * 6.7 + 0.4), 3) * frameSize * 0.008,
+      1,
+      Math.max(2.2, frameSize * 0.012),
+    );
+    const sprite = sprites[index % 11 === 0 ? 1 : index % 2 === 0 ? 3 : 0];
+    ctx.globalAlpha =
+      alpha * (0.12 + 0.58 * hash(index * 9.41 + 3.2)) * (0.75 + 0.25 * shimmer);
+    ctx.drawImage(
+      sprite,
+      x + particleX - size * 2.2,
+      y + particleY - size * 2.2,
+      size * 4.4,
+      size * 4.4,
+    );
+  }
+  ctx.restore();
+}
+
+function rebuildParticleText() {
+  const content = particleText.trim().slice(0, 20);
+  if (!content) {
+    textParticles = [];
+    textMaskWidth = 1;
+    textMaskHeight = 1;
+    return;
+  }
+
+  const fontSize = width < 600 ? 62 : 88;
+  const font = `700 ${fontSize}px "PingFang SC","Microsoft YaHei","Apple Color Emoji","Segoe UI Emoji",sans-serif`;
+  const scratch = document.createElement("canvas");
+  const paint = scratch.getContext("2d", { willReadFrequently: true });
+  paint.font = font;
+  const metrics = paint.measureText(content);
+  scratch.width = Math.max(2, Math.ceil(metrics.width + fontSize * 0.5));
+  scratch.height = Math.max(2, Math.ceil(fontSize * 1.55));
+  paint.font = font;
+  paint.fillStyle = "#ffffff";
+  paint.textAlign = "center";
+  paint.textBaseline = "middle";
+  paint.fillText(content, scratch.width / 2, scratch.height / 2);
+
+  const pixels = paint.getImageData(0, 0, scratch.width, scratch.height).data;
+  const sampled = [];
+  const step = Math.max(2, Math.round(fontSize / 28));
+  for (let y = 2; y < scratch.height; y += step) {
+    for (let x = 2; x < scratch.width; x += step) {
+      if (pixels[(y * scratch.width + x) * 4 + 3] > 78) {
+        sampled.push({ x, y });
+      }
+    }
+  }
+  const limit = width < 600 ? 1350 : 2600;
+  const stride = Math.max(1, Math.ceil(sampled.length / limit));
+  textParticles = sampled
+    .filter((_, index) => index % stride === 0)
+    .map((point, index) => ({
+      x: point.x - scratch.width / 2,
+      y: point.y - scratch.height / 2,
+      phase: index * 1.73,
+      size: 0.33 + ((index * 37) % 17) / 17 * 0.38,
+    }));
+  textMaskWidth = scratch.width;
+  textMaskHeight = scratch.height;
+}
+
+function drawParticleMessage() {
+  const visibility =
+    clamp((spread - 0.52) / 0.22, 0, 1) * (focusedPhoto >= 0 ? 0 : 1);
+  if (visibility <= 0 || !textParticles.length) return;
+
+  const worldScale = Math.min(
+    (width < 600 ? 2.35 : 3.35) / Math.max(textMaskWidth, 1),
+    (width < 600 ? 1.15 : 1.35) / Math.max(textMaskHeight, 1),
+  );
+  const projectionScale = Math.min(width * 0.29, height * 0.112) * zoom;
+  const targetScreenY = height - (width < 600 ? 325 : 290);
+  const centerWorldY = (height * 0.53 - targetScreenY) / Math.max(projectionScale, 1);
+  const items = textParticles.map((particle) => {
+    const worldX = particle.x * worldScale;
+    const worldY =
+      centerWorldY -
+      particle.y * worldScale +
+      Math.sin(elapsed * 1.2 + particle.phase) * 0.012;
+    return {
+      particle,
+      view: project(worldX, worldY, 0),
+    };
+  });
+  items.sort((a, b) => a.view.z - b.view.z);
+
+  ctx.save();
+  ctx.globalCompositeOperation = "lighter";
+  for (let index = 0; index < items.length; index++) {
+    const { particle, view } = items[index];
+    const pulse = 0.72 + 0.28 * Math.sin(elapsed * 2.4 + particle.phase);
+    const radius = clamp(
+      (particle.size * worldScale * view.scale * 2.35) / 1.8,
+      0.7,
+      3.6,
+    ) * pulse;
+    ctx.globalAlpha = visibility * (0.62 + pulse * 0.34);
+    ctx.drawImage(
+      sprites[index % 4 === 0 ? 1 : 3],
+      view.x - radius * 2.2,
+      view.y - radius * 2.2,
+      radius * 4.4,
+      radius * 4.4,
+    );
+  }
+  ctx.restore();
+}
+
+function openPhoto(index, origin = null) {
+  if (!photos[index]) return;
+  focusedPhoto = index;
+  focusOrigin = origin;
+  focusDrive = 1;
+  focusClosing = false;
+  photoCursor = index + 1;
+  demo = false;
+  $("#demo").setAttribute("aria-pressed", "false");
+  setSpread(1, false);
+  $("#state-label").textContent = "这一刻，属于你";
+  handHoveredPhoto = -1;
+  handCursor.active = false;
+  document.body.classList.add("photo-focused");
+  $("#hint").textContent = "照片已放大 · 轻触空白处返回圣诞树";
+}
+
+function closePhoto() {
+  if (focusedPhoto < 0) return;
+  focusDrive = 0;
+  focusClosing = true;
+  setSpread(0, false);
+  handHoveredPhoto = -1;
+  previousHandX = null;
+  document.body.classList.remove("photo-focused");
+  $("#hint").textContent = "双击画面切换，拖动旋转，滚轮缩放；轻触照片查看";
+}
+
+function setSpread(value, manual = true) {
+  targetSpread = clamp(value, 0, 1);
+  document.body.dataset.spread = targetSpread > 0.5 ? "spread" : "tree";
+  $("#state-label").textContent =
+    targetSpread > 0.5 ? "每一颗星，都是一个心愿" : "星光正在聚拢";
+  $("#scatter").textContent = targetSpread > 0.5 ? "✧ 聚拢成树" : "✧ 散开星光";
+  if (manual && demo) {
+    demo = false;
+    $("#demo").setAttribute("aria-pressed", "false");
+  }
+}
+
+function render(now) {
+  const delta = Math.min((now - lastTime) / 1000 || 0.016, 0.05);
+  lastTime = now;
+  elapsed += delta;
+
+  if (demo && focusedPhoto < 0) {
+    const next = Math.floor(elapsed / 6) % 2;
+    if (next !== targetSpread) setSpread(next, false);
+  }
+
+  spread += (targetSpread - spread) * (1 - Math.exp(-delta * 3.5));
+  const moveSpeed = focusDrive > focusMove ? 5 : 7.5;
+  const scaleSpeed = focusDrive > focusScale ? 4 : 9;
+  focusMove += (focusDrive - focusMove) * (1 - Math.exp(-delta * moveSpeed));
+  focusScale += (focusDrive - focusScale) * (1 - Math.exp(-delta * scaleSpeed));
+  const focusAmount = Math.max(focusMove, focusScale);
+  if (focusClosing && focusAmount < 0.008) {
+    focusedPhoto = -1;
+    focusClosing = false;
+    focusOrigin = null;
+    focusMove = 0;
+    focusScale = 0;
+  }
+  if (!reduceMotion && !pointer && focusedPhoto < 0) {
+    targetRotation += delta * (0.13 + spread * 0.06);
+  }
+  rotation += (targetRotation - rotation) * (1 - Math.exp(-delta * 6));
+
+  ctx.clearRect(0, 0, width, height);
+
+  const glow = ctx.createRadialGradient(
+    width / 2,
+    height * 0.57,
+    0,
+    width / 2,
+    height * 0.57,
+    Math.min(width * 0.65, height * 0.65),
+  );
+  glow.addColorStop(0, rgba(theme.base, 0.14));
+  glow.addColorStop(0.55, rgba(theme.base, 0.035));
+  glow.addColorStop(1, "rgba(7,9,14,0)");
+  ctx.fillStyle = glow;
+  ctx.fillRect(0, 0, width, height);
+
+  for (const flake of snow) {
+    if (!reduceMotion) flake.y = (flake.y + delta * flake.speed) % 1;
+    ctx.globalAlpha = 0.15 + 0.28 * (0.5 + 0.5 * Math.sin(elapsed + flake.phase));
+    ctx.fillStyle = mixHex(theme.pale, "#ffffff", 0.55);
+    ctx.beginPath();
+    ctx.arc(
+      flake.x * width + Math.sin(elapsed * 0.2 + flake.phase) * 15,
+      flake.y * height,
+      flake.radius,
+      0,
+      7,
+    );
+    ctx.fill();
+  }
+  ctx.globalAlpha = 1;
+
+  const floor = ctx.createRadialGradient(
+    width / 2,
+    height * 0.81,
+    0,
+    width / 2,
+    height * 0.81,
+    Math.min(width * 0.27, 200),
+  );
+  floor.addColorStop(0, rgba(theme.base, 0.14));
+  floor.addColorStop(1, rgba(theme.base, 0));
+  ctx.save();
+  ctx.translate(0, height * 0.81 * 0.8);
+  ctx.scale(1, 0.2);
+  ctx.fillStyle = floor;
+  ctx.fillRect(0, 0, width, height);
+  ctx.restore();
+
+  const renderedPoints = points.map((point) => {
+    const swirl = Math.sin(elapsed * 0.55 + point.phase) * 0.04 * spread;
+    return {
+      point,
+      view: project(
+        point.x * (1 - spread) + point.sx * spread + swirl,
+        point.y * (1 - spread) + point.sy * spread,
+        point.z * (1 - spread) + point.sz * spread,
+      ),
+    };
+  });
+
+  renderedPoints.sort((a, b) => a.view.z - b.view.z);
+  ctx.globalCompositeOperation = "lighter";
+  for (const { point, view } of renderedPoints) {
+    const twinkle = reduceMotion ? 0.8 : 0.65 + 0.35 * Math.sin(elapsed * 1.8 + point.phase);
+    const focusFade = 1 - focusAmount * 0.16;
+    ctx.globalAlpha = (0.48 + view.z * 0.07) * twinkle * focusFade;
+    const size =
+      point.size *
+      (view.scale / 90) *
+      (point.garland ? 5.3 : 3.2);
+    ctx.drawImage(sprites[point.color % sprites.length], view.x - size, view.y - size, size * 2, size * 2);
+  }
+
+  if (spread < 0.7) {
+    const garlandViews = garland.map((point) => {
+      const view = project(
+        point.x * (1 - spread) + point.sx * spread,
+        point.y * (1 - spread) + point.sy * spread,
+        point.z * (1 - spread) + point.sz * spread,
+      );
+      return { point, view };
+    });
+    ctx.save();
+    ctx.globalCompositeOperation = "lighter";
+    ctx.globalAlpha = (1 - spread / 0.7) * (0.35 - focusAmount * 0.11);
+    ctx.strokeStyle = theme.pale;
+    ctx.shadowColor = theme.base;
+    ctx.shadowBlur = 18;
+    ctx.lineWidth = Math.max(1.2, Math.min(width, height) * 0.0032);
+    ctx.beginPath();
+    garlandViews.forEach(({ view }, index) => {
+      if (index === 0) ctx.moveTo(view.x, view.y);
+      else ctx.lineTo(view.x, view.y);
+    });
+    ctx.stroke();
+    ctx.restore();
+  }
+  ctx.globalAlpha = 1;
+  ctx.globalCompositeOperation = "source-over";
+
+  photoHitboxes = [];
+  const cards = photos
+    .map((photo, index) => {
+      const radius = spread * 2.35 + 0.55;
+      return {
+        photo,
+        index,
+        view: project(
+          Math.cos(photo.phase) * radius,
+          photo.y * (1 + spread * 0.35),
+          Math.sin(photo.phase) * radius,
+        ),
+      };
+    })
+    .sort((a, b) => a.view.z - b.view.z);
+
+  const renderPhotoCard = ({ photo, index, view }) => {
+    if (!photo.image.complete) return;
+    if (index === focusedPhoto) return;
+    const hovered = index === handHoveredPhoto && handCursor.active;
+    const size = (0.15 + spread * 0.35) * view.scale * (hovered ? 1.12 : 1);
+    const alpha = (0.55 + spread * 0.45) * (1 - focusAmount * 0.76);
+    drawPhoto(photo.image, view.x, view.y, size, photo.tilt + Math.sin(photo.phase) * 0.1, alpha);
+    if (focusedPhoto < 0) {
+      photoHitboxes.push({
+        x: view.x - size / 2,
+        y: view.y - (size * 1.13) / 2,
+        w: size,
+        h: size * 1.13,
+        index,
+        z: view.z,
+      });
+    }
+  };
+
+  cards.filter((card) => card.view.z <= 0).forEach(renderPhotoCard);
+  drawParticleMessage();
+  cards.filter((card) => card.view.z > 0).forEach(renderPhotoCard);
+
+  const top = project(0, 2.04 + spread * 0.15, 0);
+  drawStar(top.x, top.y, Math.max(9, top.scale * 0.14), 1 - spread * 0.5);
+  if (!reduceMotion) {
+    drawStar(top.x, top.y, Math.max(11, top.scale * 0.2), 0.08 + 0.07 * Math.sin(elapsed * 2));
+  }
+  if (handCursor.active && focusedPhoto < 0) {
+    const selected = photoHitboxes.find((hitbox) => hitbox.index === handHoveredPhoto);
+    ctx.save();
+    ctx.globalCompositeOperation = "lighter";
+    if (selected) {
+      const centerX = selected.x + selected.w / 2;
+      const centerY = selected.y + selected.h / 2;
+      ctx.strokeStyle = theme.pale;
+      ctx.lineWidth = 2;
+      ctx.shadowColor = theme.base;
+      ctx.shadowBlur = 22;
+      ctx.strokeRect(selected.x - 5, selected.y - 5, selected.w + 10, selected.h + 10);
+      ctx.shadowBlur = 0;
+      ctx.globalCompositeOperation = "source-over";
+      ctx.fillStyle = rgba(theme.pale, 0.92);
+      ctx.font = `600 ${clamp(width * 0.009, 11, 14)}px "PingFang SC","Microsoft YaHei",sans-serif`;
+      ctx.textAlign = "center";
+      const label = "直接捏合 · 拿走这张";
+      const labelX = clamp(centerX, 82, width - 82);
+      const labelY = clamp(centerY - selected.h / 2 - 16, 24, height - 24);
+      const textWidth = ctx.measureText(label).width;
+      ctx.fillStyle = "rgba(7,9,14,.82)";
+      ctx.fillRect(labelX - textWidth / 2 - 9, labelY - 14, textWidth + 18, 24);
+      ctx.strokeStyle = rgba(theme.base, 0.42);
+      ctx.lineWidth = 1;
+      ctx.strokeRect(labelX - textWidth / 2 - 9, labelY - 14, textWidth + 18, 24);
+      ctx.fillStyle = theme.pale;
+      ctx.fillText(label, labelX, labelY + 2);
+      ctx.globalCompositeOperation = "lighter";
+    }
+    ctx.globalCompositeOperation = "source-over";
+    ctx.restore();
+  }
+
+  if (focusedPhoto >= 0 && (focusMove > 0.001 || focusScale > 0.001)) {
+    const photo = photos[focusedPhoto];
+    const visible = Math.min(1, focusScale * 6);
+    if (photo.image.complete) {
+      const maxWidth = width < 600 ? width * 0.92 : width * 0.44;
+      const finalSize = Math.min(maxWidth, height * 0.58);
+      const originX = focusOrigin?.x ?? width / 2;
+      const originY = focusOrigin?.y ?? height * 0.53;
+      const targetX = width / 2;
+      const targetY = height * 0.5;
+      const x = lerp(originX, targetX, focusMove);
+      const y = lerp(originY, targetY, focusMove);
+      const startSize = Math.max(28, focusOrigin?.w ?? 40);
+      const size = lerp(startSize, finalSize, focusScale);
+      const tilt = lerp(focusOrigin?.tilt ?? 0.05, 0, focusMove);
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.rotate(tilt);
+      drawFocusedPhoto(photo.image, 0, 0, size, visible);
+      ctx.restore();
+    }
+  }
+
+  requestAnimationFrame(render);
+}
+
+$("#scatter").onclick = () => {
+  closePhoto();
+  setSpread(targetSpread > 0.5 ? 0 : 1);
+};
+
+$("#demo").onclick = () => {
+  closePhoto();
+  demo = !demo;
+  $("#demo").setAttribute("aria-pressed", String(demo));
+  if (demo) {
+    elapsed = 6;
+    setSpread(1, false);
+  }
+  toast(demo ? "自动演示已开启，每 6 秒切换一次" : "自动演示已关闭");
+};
+
+$("#color-picker").addEventListener("input", (event) => {
+  applyTheme(event.target.value);
+});
+
+$("#color-picker").addEventListener("change", (event) => {
+  applyTheme(event.target.value, { announce: false });
+  if (saveDeveloperDraft()) {
+    toast(`已切换为 ${theme.base.toUpperCase()} 花火色，开发草稿已自动保存`);
+  }
+});
+
+$("#particle-text-input").value = particleText;
+let textSaveTimer;
+$("#particle-text-input").addEventListener("input", (event) => {
+  particleText = event.target.value.slice(0, 20);
+  rebuildParticleText();
+  clearTimeout(textSaveTimer);
+  textSaveTimer = setTimeout(() => {
+    if (!IS_APPRECIATION && saveDeveloperDraft()) {
+      toast("粒子文字已自动保存");
+    }
+  }, 500);
+});
+$("#particle-text-input").addEventListener("keydown", (event) => {
+  if (event.key === "Enter") {
+    event.preventDefault();
+    event.currentTarget.blur();
+  }
+});
+
+canvas.addEventListener("pointerdown", (event) => {
+  pointer = {
+    id: event.pointerId,
+    x: event.clientX,
+    y: event.clientY,
+    startX: event.clientX,
+    startY: event.clientY,
+  };
+  dragged = false;
+  canvas.setPointerCapture(event.pointerId);
+});
+
+canvas.addEventListener("pointermove", (event) => {
+  if (!pointer || event.pointerId !== pointer.id) return;
+  const deltaX = event.clientX - pointer.x;
+  if (focusedPhoto < 0) targetRotation += deltaX * 0.008;
+  pointer.x = event.clientX;
+  pointer.y = event.clientY;
+  if (Math.hypot(event.clientX - pointer.startX, event.clientY - pointer.startY) > 7) {
+    dragged = true;
+  }
+});
+
+canvas.addEventListener("pointerup", (event) => {
+  if (!pointer || event.pointerId !== pointer.id) return;
+  const startX = pointer.startX;
+  const startY = pointer.startY;
+  pointer = null;
+  if (dragged) return;
+
+  if (focusedPhoto >= 0) {
+    closePhoto();
+    return;
+  }
+
+  const card = photoHitboxes
+    .filter(
+      (hitbox) =>
+        event.clientX >= hitbox.x &&
+        event.clientX <= hitbox.x + hitbox.w &&
+        event.clientY >= hitbox.y &&
+        event.clientY <= hitbox.y + hitbox.h,
+    )
+    .sort((a, b) => {
+      const distanceA = Math.hypot(
+        event.clientX - (a.x + a.w / 2),
+        event.clientY - (a.y + a.h / 2),
+      );
+      const distanceB = Math.hypot(
+        event.clientX - (b.x + b.w / 2),
+        event.clientY - (b.y + b.h / 2),
+      );
+      return distanceA - distanceB || b.z - a.z;
+    })[0];
+  if (card) {
+    openPhoto(card.index, {
+      x: card.x + card.w / 2,
+      y: card.y + card.h / 2,
+      w: card.w,
+      tilt: 0,
+    });
+    return;
+  }
+
+  const now = performance.now();
+  const isDoubleTap =
+    now - lastTap < 330 &&
+    Math.hypot(event.clientX - lastTapX, event.clientY - lastTapY) < 42;
+  if (isDoubleTap) {
+    setSpread(targetSpread > 0.5 ? 0 : 1);
+    lastTap = 0;
+  } else {
+    lastTap = now;
+    lastTapX = event.clientX;
+    lastTapY = event.clientY;
+  }
+  void startX;
+  void startY;
+});
+
+canvas.addEventListener("pointercancel", () => {
+  pointer = null;
+});
+
+canvas.addEventListener(
+  "wheel",
+  (event) => {
+    event.preventDefault();
+    if (focusedPhoto < 0) zoom = clamp(zoom - event.deltaY * 0.001, 0.65, 1.55);
+  },
+  { passive: false },
+);
+
+addEventListener("keydown", (event) => {
+  if (["BUTTON", "INPUT", "SELECT"].includes(document.activeElement?.tagName)) return;
+  if (event.code === "Escape" && focusedPhoto >= 0) {
+    closePhoto();
+    return;
+  }
+  if (event.code === "Space" && focusedPhoto < 0) {
+    event.preventDefault();
+    setSpread(targetSpread > 0.5 ? 0 : 1);
+  }
+});
+
+$("#fullscreen").onclick = async () => {
+  try {
+    if (document.fullscreenElement) await document.exitFullscreen();
+    else await document.documentElement.requestFullscreen();
+  } catch {
+    toast("当前浏览器未开放全屏，可使用浏览器全屏按钮");
+  }
+};
+
+function toast(message, duration = 4200) {
+  $("#toast").textContent = message;
+  $("#toast").classList.add("show");
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => $("#toast").classList.remove("show"), duration);
+}
+
+$("#photos").onclick = () => $("#photo-input").click();
+
+$("#photo-input").onchange = async (event) => {
+  const files = [...event.target.files].slice(0, 12);
+  if (!files.length) return;
+  const images = [];
+  for (const file of files) {
+    if (!file.type.startsWith("image/")) continue;
+    if (file.size > 25 * 1024 * 1024) {
+      toast("已跳过超过 25 MB 的照片");
+      continue;
+    }
+    try {
+      const bitmap = await createImageBitmap(file);
+      const compressed = document.createElement("canvas");
+      const scale = Math.min(1, 900 / Math.max(bitmap.width, bitmap.height));
+      compressed.width = Math.max(1, Math.round(bitmap.width * scale));
+      compressed.height = Math.max(1, Math.round(bitmap.height * scale));
+      compressed.getContext("2d").drawImage(bitmap, 0, 0, compressed.width, compressed.height);
+      bitmap.close();
+      const image = new Image();
+      image.src = compressed.toDataURL("image/jpeg", 0.82);
+      await image.decode();
+      images.push(image);
+    } catch {
+      toast("有照片未能读取，请选择 JPG、PNG 或 WebP 图片");
+    }
+  }
+  if (images.length) {
+    photos = layoutPhotos(images);
+    closePhoto();
+    setSpread(1);
+    const saved = saveDeveloperDraft();
+    toast(
+      saved
+        ? `已放入 ${images.length} 张照片并自动保存；可点击“保存欣赏版”发送给好友`
+        : `已放入 ${images.length} 张照片；请直接保存欣赏版`,
+      6500,
+    );
+  }
+  event.target.value = "";
+};
+
+let detector = null;
+let stream = null;
+let cameraBusy = false;
+let cameraGeneration = 0;
+let inferenceTimer = null;
+let lastVideoTime = -1;
+let lastGesture = "";
+let gestureFrames = 0;
+let pinchWasDown = false;
+let lastPinch = 0;
+let detectorPromise = null;
+
+const cameraButton = $("#camera-toggle");
+const cameraPanel = $(".camera-panel");
+const cameraState = $("#camera-state");
+const cameraSelect = $("#camera-device");
+const hint = $("#hint");
+const video = $("#camera");
+
+function cameraHelp(error) {
+  const message = String(error?.message || "").toLowerCase();
+  if (error?.name === "NotAllowedError" && message.includes("system")) {
+    return "系统已阻止浏览器使用摄像头，请在系统隐私设置中允许当前浏览器使用相机。";
+  }
+  if (error?.name === "NotAllowedError") {
+    return "摄像头权限被关闭。请点地址栏左侧的网站设置，将“摄像头”改为允许后刷新。";
+  }
+  if (error?.name === "NotFoundError") {
+    return "没有检测到摄像头。请检查连接，并在 Windows 设置 → 隐私和安全性 → 相机中允许桌面应用访问。";
+  }
+  if (error?.name === "NotReadableError") {
+    return "摄像头被占用或驱动异常。请关闭微信、会议和相机应用，拔插摄像头后重新开启手势。";
+  }
+  if (error?.name === "OverconstrainedError") {
+    return "摄像头不支持当前分辨率设置，已尝试默认设置；请重新开启或更换摄像头。";
+  }
+  if (error?.name === "SecurityError") return "当前浏览器限制了摄像头，请使用 localhost 或 HTTPS 页面。";
+  return "手势模型启动失败，请刷新页面或使用最新版 Chrome、Edge。";
+}
+
+async function requestCameraStream() {
+  if (!navigator.mediaDevices?.getUserMedia) {
+    throw new DOMException("Camera API unavailable", "NotSupportedError");
+  }
+  const phoneLayout =
+    width < 760 || matchMedia("(pointer: coarse)").matches;
+  const preferredVideo = {
+    width: { ideal: 640 },
+    height: { ideal: 480 },
+    frameRate: { ideal: 24, max: 30 },
+    ...(phoneLayout ? { facingMode: { ideal: "user" } } : {}),
+  };
+  let lastError;
+  let rememberedCamera = "";
+  try {
+    rememberedCamera = localStorage.getItem(CAMERA_DEVICE_KEY) || "";
+  } catch {}
+  const attempts = rememberedCamera
+    ? [{ deviceId: { exact: rememberedCamera }, ...preferredVideo }, preferredVideo, true]
+    : [preferredVideo, true];
+
+  for (const video of attempts) {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ video, audio: false });
+      return await preferColorCamera(stream, rememberedCamera);
+    } catch (error) {
+      lastError = error;
+      if (error?.name === "NotAllowedError" || error?.name === "SecurityError") {
+        throw error;
+      }
+    }
+  }
+
+  try {
+    const devices = await navigator.mediaDevices.enumerateDevices();
+    const cameras = devices
+      .filter((device) => device.kind === "videoinput")
+      .sort((a, b) => Number(isInfraredCamera(a.label)) - Number(isInfraredCamera(b.label)));
+    for (const camera of cameras) {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: {
+            deviceId: { exact: camera.deviceId },
+            width: { ideal: 640 },
+            height: { ideal: 480 },
+          },
+          audio: false,
+        });
+        return await preferColorCamera(stream, camera.deviceId);
+      } catch (error) {
+        lastError = error;
+      }
+    }
+  } catch (error) {
+    lastError ||= error;
+  }
+  throw lastError || new DOMException("Camera unavailable", "NotFoundError");
+}
+
+function isInfraredCamera(label = "") {
+  return /(^|\b)(ir|infrared|depth|windows hello|virtual)(\b|$)/i.test(label);
+}
+
+async function preferColorCamera(stream, requestedDeviceId = "") {
+  const track = stream.getVideoTracks()[0];
+  if (!track) return stream;
+  const devices = (await navigator.mediaDevices.enumerateDevices())
+    .filter((device) => device.kind === "videoinput");
+  const settings = track.getSettings ? track.getSettings() : {};
+  const activeDeviceId = settings.deviceId || requestedDeviceId;
+  const activeLabel =
+    track.label ||
+    devices.find((device) => device.deviceId === activeDeviceId)?.label ||
+    "";
+
+  cameraSelect.innerHTML = "";
+  const sortedDevices = [...devices].sort(
+    (a, b) => Number(isInfraredCamera(a.label)) - Number(isInfraredCamera(b.label)),
+  );
+  for (const [index, device] of sortedDevices.entries()) {
+    const option = document.createElement("option");
+    option.value = device.deviceId;
+    option.textContent = device.label || `摄像头 ${index + 1}`;
+    option.selected = device.deviceId === activeDeviceId;
+    cameraSelect.appendChild(option);
+  }
+  cameraSelect.hidden = sortedDevices.length <= 1;
+
+  const colorCamera = sortedDevices.find(
+    (device) => !isInfraredCamera(device.label) && device.deviceId,
+  );
+  if (
+    !requestedDeviceId &&
+    isInfraredCamera(activeLabel) &&
+    colorCamera &&
+    colorCamera.deviceId !== activeDeviceId
+  ) {
+    track.stop();
+    const replacement = await navigator.mediaDevices.getUserMedia({
+      video: {
+        deviceId: { exact: colorCamera.deviceId },
+        width: { ideal: 640 },
+        height: { ideal: 480 },
+        frameRate: { ideal: 24, max: 30 },
+      },
+      audio: false,
+    });
+    try {
+      localStorage.setItem(CAMERA_DEVICE_KEY, colorCamera.deviceId);
+    } catch {}
+    return preferColorCamera(replacement, colorCamera.deviceId);
+  }
+  return stream;
+}
+
+function stopCamera({ keepHint = false } = {}) {
+  cameraGeneration++;
+  if (inferenceTimer) clearTimeout(inferenceTimer);
+  inferenceTimer = null;
+  stream?.getTracks().forEach((track) => track.stop());
+  stream = null;
+  video.srcObject = null;
+  cameraPanel.hidden = true;
+  cameraSelect.hidden = true;
+  cameraSelect.innerHTML = "";
+  cameraButton.innerHTML = "<span>◎</span> 开启手势";
+  cameraButton.disabled = false;
+  cameraBusy = false;
+  lastGesture = "";
+  gestureFrames = 0;
+  pinchWasDown = false;
+  previousHandX = null;
+  handHoveredPhoto = -1;
+  handCursor.active = false;
+  if (!keepHint) hint.textContent = "双击画面切换，拖动旋转，滚轮缩放；轻触照片查看";
+}
+
+function updateHandSelection() {
+  if (focusedPhoto >= 0 || !photoHitboxes.length) {
+    handHoveredPhoto = -1;
+    return -1;
+  }
+  let closestIndex = -1;
+  let bestScore = Number.POSITIVE_INFINITY;
+  for (const hitbox of photoHitboxes) {
+    const centerX = hitbox.x + hitbox.w / 2;
+    const centerY = hitbox.y + hitbox.h / 2;
+    const score =
+      Math.abs(centerX - width * 0.5) * 0.8 +
+      Math.abs(centerY - handCursor.y) * 0.52 -
+      hitbox.z * 25;
+    if (score < bestScore) {
+      bestScore = score;
+      closestIndex = hitbox.index;
+    }
+  }
+  handHoveredPhoto = closestIndex;
+  return closestIndex;
+}
+
+async function loadGestureDetector() {
+  if (detector) return detector;
+  if (detectorPromise) return detectorPromise;
+
+  detectorPromise = (async () => {
+    const standalone = Boolean(BOOT_CONFIG?.standalone);
+    const visionModulePath = standalone
+      ? `${GESTURE_CDN_BASE}/vision_bundle.mjs`
+      : "./vendor/vision_bundle.mjs";
+    const wasmPath = standalone
+      ? `${GESTURE_CDN_BASE}/wasm`
+      : "./vendor/wasm";
+    const modelPath = standalone
+      ? BOOT_CONFIG?.modelUrl ||
+        `${GESTURE_CDN_BASE}/hand_landmarker.task`
+      : "./vendor/hand_landmarker.task";
+    const preferredDelegate =
+      width < 760 || matchMedia("(pointer: coarse)").matches ? "CPU" : "GPU";
+    const { HandLandmarker, FilesetResolver } = await import(visionModulePath);
+    const vision = await FilesetResolver.forVisionTasks(wasmPath);
+    const options = {
+      baseOptions: { modelAssetPath: modelPath, delegate: preferredDelegate },
+      runningMode: "VIDEO",
+      numHands: 1,
+      minHandDetectionConfidence: 0.45,
+      minHandPresenceConfidence: 0.45,
+      minTrackingConfidence: 0.45,
+    };
+    try {
+      return await HandLandmarker.createFromOptions(vision, options);
+    } catch (gpuError) {
+      console.warn("Preferred gesture delegate failed, retrying:", gpuError);
+      options.baseOptions.delegate = preferredDelegate === "GPU" ? "CPU" : "GPU";
+      return HandLandmarker.createFromOptions(vision, options);
+    }
+  })()
+    .then((createdDetector) => {
+      detector = createdDetector;
+      return createdDetector;
+    })
+    .catch((error) => {
+      detectorPromise = null;
+      throw error;
+    });
+  return detectorPromise;
+}
+
+function preloadGestureDetector() {
+  if (!navigator.mediaDevices?.getUserMedia || !window.isSecureContext) return;
+  const start = () => {
+    loadGestureDetector().catch((error) => {
+      console.info("Gesture model preload will retry on demand:", error);
+    });
+  };
+  setTimeout(start, 250);
+}
+
+cameraButton.onclick = async () => {
+  if (stream || cameraBusy) {
+    stopCamera();
+    return;
+  }
+  if (location.protocol === "file:") {
+    const message =
+      "本地文件模式无法使用摄像头。请双击“启动圣诞树.bat”，再通过 localhost 页面开启手势。";
+    hint.textContent = message;
+    toast(message, 9000);
+    return;
+  }
+  if (!navigator.mediaDevices?.getUserMedia) {
+    const message = "当前浏览器没有开放摄像头接口，请用 Chrome、Edge 或 Safari 打开这个页面。";
+    hint.textContent = message;
+    toast(message, 9000);
+    return;
+  }
+
+  const generation = ++cameraGeneration;
+  cameraBusy = true;
+  cameraButton.disabled = true;
+  cameraButton.textContent = "正在请求摄像头…";
+  hint.textContent = "请在浏览器提示中允许摄像头；画面只在本机识别，不会上传。";
+  const detectorReady = loadGestureDetector();
+
+  try {
+    const media = await requestCameraStream();
+    if (generation !== cameraGeneration) {
+      media.getTracks().forEach((track) => track.stop());
+      return;
+    }
+    stream = media;
+    video.srcObject = media;
+    await video.play();
+    cameraPanel.hidden = false;
+    cameraState.textContent = "正在加载手势模型…";
+    cameraButton.textContent = "正在加载手势…";
+
+    detector = await detectorReady;
+
+    if (generation !== cameraGeneration) return;
+    cameraBusy = false;
+    cameraButton.disabled = false;
+    cameraButton.textContent = "◎ 关闭手势";
+    cameraState.textContent = "请将一只手完整放入镜头";
+    hint.textContent = "左右挥手掌旋转，上下移动切换照片，捏合放大；张开散开，握拳聚拢";
+    lastVideoTime = -1;
+    detectHands(generation);
+  } catch (error) {
+    if (generation !== cameraGeneration) return;
+    const message = cameraHelp(error);
+    stopCamera({ keepHint: true });
+    hint.textContent = message;
+    toast(message, 10000);
+    console.error("Hand control:", error);
+  }
+};
+
+cameraSelect.onchange = () => {
+  if (!cameraSelect.value) return;
+  try {
+    localStorage.setItem(CAMERA_DEVICE_KEY, cameraSelect.value);
+  } catch {}
+  stopCamera();
+  setTimeout(() => cameraButton.click(), 120);
+};
+
+function updateHandHorizontalRotation(screenX, gesture) {
+  const canRotate =
+    focusedPhoto < 0 || focusClosing || gesture === "fist";
+  if (canRotate && previousHandX !== null) {
+    const movement = screenX - previousHandX;
+    if (Math.abs(movement) > 0.35) targetRotation += movement * 0.022;
+  }
+  previousHandX = canRotate ? screenX : null;
+  return canRotate;
+}
+
+function detectHands(generation) {
+  if (!stream || generation !== cameraGeneration) return;
+  try {
+    if (video.readyState >= 2 && video.currentTime !== lastVideoTime) {
+      lastVideoTime = video.currentTime;
+      const result = detector.detectForVideo(video, performance.now());
+      const landmarks = result.landmarks?.[0];
+      if (landmarks) {
+        let { gesture, extended } = classifyHand(landmarks);
+        const now = performance.now();
+        let pinchIgnoredMessage = "";
+        if (focusedPhoto >= 0 && now < focusGestureGuardUntil) {
+          gesture = "move";
+          pinchIgnoredMessage = "请松开手指，停稳后再用完整握拳收回";
+        } else if (focusedPhoto >= 0 && gesture === "pinch") {
+          gesture = "move";
+          pinchIgnoredMessage = "照片已放大 · 请完整握拳收回";
+        } else if (focusedPhoto < 0 && targetSpread <= 0.5 && gesture === "pinch") {
+          gesture = "move";
+          pinchIgnoredMessage = "先张开手散开星光，再捏合选择照片";
+        }
+        const palmLandmarks = [landmarks[0], landmarks[5], landmarks[9], landmarks[13], landmarks[17]];
+        const palmCenterX =
+          palmLandmarks.reduce((sum, point) => sum + point.x, 0) / palmLandmarks.length;
+        const palmCenterY =
+          palmLandmarks.reduce((sum, point) => sum + point.y, 0) / palmLandmarks.length;
+        const palmScreenX = clamp((1 - palmCenterX) * width, 12, width - 12);
+        const palmScreenY = clamp(palmCenterY * height, 12, height - 12);
+        lastHandSeenAt = performance.now();
+        handCursor.active = focusedPhoto < 0 && gesture !== "fist";
+        handCursor.x = palmScreenX;
+        handCursor.y = palmScreenY;
+
+        updateHandHorizontalRotation(palmScreenX, gesture);
+
+        if (focusedPhoto < 0 && gesture !== "fist") {
+          updateHandSelection();
+        } else {
+          handHoveredPhoto = -1;
+        }
+
+        if (gesture === lastGesture) gestureFrames++;
+        else {
+          lastGesture = gesture;
+          gestureFrames = 1;
+        }
+
+        if (gestureFrames >= 2) {
+          if (gesture === "open") {
+            closePhoto();
+            setSpread(1);
+            cameraState.textContent = `✧ 张开 · 星光散开（${extended}/4）`;
+          } else if (gesture === "fist") {
+            const wasFocused = focusedPhoto >= 0;
+            closePhoto();
+            setSpread(0);
+            cameraState.textContent = wasFocused ? "✦ 握拳 · 收回照片" : "✦ 握拳 · 聚拢成树";
+          } else if (gesture === "pinch") {
+            if (focusedPhoto < 0 && !pinchWasDown && performance.now() - lastPinch > 1200) {
+              const hovered = photoHitboxes.find((hitbox) => hitbox.index === handHoveredPhoto);
+              if (hovered) {
+                openPhoto(handHoveredPhoto, {
+                  x: hovered.x + hovered.w / 2,
+                  y: hovered.y + hovered.h / 2,
+                  w: hovered.w,
+                  tilt: 0,
+                });
+                lastPinch = performance.now();
+                focusGestureGuardUntil = performance.now() + 1000;
+              } else {
+                cameraState.textContent = "▧ 当前没有可选择的照片";
+              }
+            }
+            if (focusedPhoto >= 0) {
+              cameraState.textContent = "照片已放大 · 张开或握拳返回";
+            } else if (handHoveredPhoto >= 0) {
+              cameraState.textContent = "▧ 捏合 · 珍藏瞬间";
+            }
+          } else {
+            cameraState.textContent =
+              pinchIgnoredMessage ||
+              (handHoveredPhoto >= 0
+                ? `照片 ${handHoveredPhoto + 1}/${photos.length} · 上下移动可切换 · 捏合放大`
+                : "左右挥手掌旋转 · 上下移动选择照片");
+          }
+          pinchWasDown = gesture === "pinch";
+        }
+      } else {
+        cameraState.textContent = "没有识别到手 · 请后退一点并保持光线充足";
+        lastGesture = "";
+        gestureFrames = 0;
+        pinchWasDown = false;
+        if (performance.now() - lastHandSeenAt > 260) {
+          previousHandX = null;
+          handHoveredPhoto = -1;
+          handCursor.active = false;
+        }
+      }
+    }
+    inferenceTimer = setTimeout(() => detectHands(generation), 70);
+  } catch (error) {
+    console.error("Hand tracking:", error);
+    stopCamera({ keepHint: true });
+    hint.textContent = "手势识别中断，请重新开启；鼠标和触屏仍可使用。";
+    toast("手势识别中断，可重新开启；鼠标和触屏仍可使用", 8000);
+  }
+}
+
+addEventListener("pagehide", () => {
+  stopCamera();
+  detector?.close();
+});
+
+document.addEventListener("visibilitychange", () => {
+  if (document.hidden && (stream || cameraBusy)) stopCamera();
+});
+
+let savedColor = DEFAULT_COLOR;
+try {
+  savedColor =
+    BOOT_CONFIG?.color ||
+    storedDraft?.color ||
+    localStorage.getItem(COLOR_KEY) ||
+    localStorage.getItem(LEGACY_COLOR_KEY) ||
+    DEFAULT_COLOR;
+} catch {}
+applyTheme(savedColor, { persist: !IS_APPRECIATION });
+setSpread(0, false);
+$("#mode-badge").textContent = IS_APPRECIATION ? "欣赏模式" : "开发者模式";
+$("#export").onclick = exportAppreciation;
+window.hanabi = {
+  applyTheme,
+  classifyHand,
+  createAppreciationHTML,
+  closePhoto,
+  exportAppreciation,
+  getRotation: () => targetRotation,
+  getPhotoHitboxes: () => photoHitboxes,
+  openPhoto,
+  saveDeveloperDraft,
+  setSpread,
+  simulateHandMotion: (x, gesture = "move") => {
+    updateHandHorizontalRotation(x, gesture);
+    return targetRotation;
+  },
+  simulateHand: (x, y) => {
+    handCursor.active = true;
+    handCursor.x = x;
+    handCursor.y = y;
+    return updateHandSelection();
+  },
+};
+requestAnimationFrame(render);
+preloadGestureDetector();
+
+</script>
+  </body>
+</html>
