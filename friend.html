@@ -131,6 +131,28 @@ header {
   backdrop-filter: blur(10px);
 }
 
+.mode-action {
+  min-height: 34px;
+  padding: 6px 11px;
+  border: 1px solid var(--theme-soft);
+  border-radius: 999px;
+  background: rgba(8, 10, 15, 0.5);
+  color: var(--theme-pale);
+  font-size: 10px;
+  letter-spacing: 1px;
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+}
+
+.mode-action:hover {
+  border-color: var(--theme);
+  background: var(--theme-soft);
+}
+
+body[data-mode="appreciation"] #preview-mode {
+  display: none;
+}
+
 .icon-button {
   display: grid;
   place-items: center;
@@ -545,6 +567,11 @@ small span {
     letter-spacing: 1px;
   }
 
+  .mode-action {
+    padding: 6px 9px;
+    font-size: 9px;
+  }
+
   .toolbar button,
   .color-control {
     justify-content: center;
@@ -628,6 +655,8 @@ small span {
       <a class="wordmark" href="./"><span>✧</span> 花火 <i>WINTER COLLECTION</i></a>
       <div class="header-actions">
         <span id="mode-badge" class="mode-badge">开发者模式</span>
+        <button id="preview-mode" class="mode-action">欣赏预览</button>
+        <button id="return-developer" class="mode-action" hidden>返回编辑</button>
         <button id="fullscreen" class="icon-button" aria-label="切换全屏" title="全屏">⛶</button>
       </div>
     </header>
@@ -2408,6 +2437,27 @@ $("#mode-badge").textContent = IS_APPRECIATION
   : SHARED_DEVELOPER
     ? "朋友开发者版"
     : "开发者模式";
+
+const previewButton = $("#preview-mode");
+const returnDeveloperButton = $("#return-developer");
+const isPreviewMode =
+  IS_APPRECIATION && new URLSearchParams(location.search).get("preview") === "1";
+previewButton.hidden = IS_APPRECIATION;
+returnDeveloperButton.hidden = !isPreviewMode;
+previewButton.onclick = () => {
+  saveDeveloperDraft();
+  const next = new URL(location.href);
+  next.searchParams.set("mode", "appreciation");
+  next.searchParams.set("preview", "1");
+  location.assign(next);
+};
+returnDeveloperButton.onclick = () => {
+  const next = new URL(location.href);
+  next.searchParams.set("mode", "developer");
+  next.searchParams.delete("preview");
+  location.assign(next);
+};
+
 $("#export").onclick = exportAppreciation;
 window.hanabi = {
   applyTheme,
