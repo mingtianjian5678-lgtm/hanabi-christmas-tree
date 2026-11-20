@@ -1001,6 +1001,13 @@ async function createAppreciationHTML() {
   body.setAttribute("data-mode", "appreciation");
   body.setAttribute("data-standalone", "true");
   body.querySelector("#mode-badge").textContent = "欣赏模式";
+  for (const selector of ["#photos", ".color-control", "#export", ".message-editor"]) {
+    const control = body.querySelector(selector);
+    if (!control) continue;
+    control.hidden = true;
+    control.setAttribute("aria-hidden", "true");
+    control.style.display = "none";
+  }
   const toastNode = body.querySelector("#toast");
   toastNode.textContent = "";
   toastNode.classList.remove("show");
@@ -2437,6 +2444,15 @@ $("#mode-badge").textContent = IS_APPRECIATION
   : SHARED_DEVELOPER
     ? "朋友开发者版"
     : "开发者模式";
+if (IS_APPRECIATION) {
+  for (const selector of ["#photos", ".color-control", "#export", ".message-editor"]) {
+    const control = $(selector);
+    if (!control) continue;
+    control.hidden = true;
+    control.setAttribute("aria-hidden", "true");
+    control.style.display = "none";
+  }
+}
 
 const previewButton = $("#preview-mode");
 const returnDeveloperButton = $("#return-developer");
