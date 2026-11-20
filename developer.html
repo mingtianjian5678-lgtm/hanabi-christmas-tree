@@ -698,7 +698,8 @@ const MODE =
   "developer";
 const IS_APPRECIATION = MODE === "appreciation";
 const BOOT_CONFIG = window.HANABI_CONFIG || null;
-const DRAFT_KEY = "hanabi-developer-draft-v1";
+const SHARED_DEVELOPER = Boolean(BOOT_CONFIG?.sharedDeveloper);
+const DRAFT_KEY = BOOT_CONFIG?.draftKey || "hanabi-developer-draft-v1";
 const GESTURE_CDN_BASE =
   "https://cdn.jsdelivr.net/gh/mingtianjian5678-lgtm/hanabi-christmas-tree@hanabi-model-v1/vendor";
 document.body.dataset.mode = MODE;
@@ -778,8 +779,11 @@ function classifyHand(points) {
 const canvas = $("#scene");
 const ctx = canvas.getContext("2d");
 const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
-const COLOR_KEY = "hanabi-theme-color";
-const LEGACY_COLOR_KEY = "christmas-tree-theme-color";
+const COLOR_KEY = BOOT_CONFIG?.colorKey || "hanabi-theme-color";
+const LEGACY_COLOR_KEY =
+  BOOT_CONFIG?.legacyColorKey === ""
+    ? ""
+    : BOOT_CONFIG?.legacyColorKey || "christmas-tree-theme-color";
 const CAMERA_DEVICE_KEY = "hanabi-camera-device";
 const DEFAULT_COLOR = "#f6d88e";
 
@@ -1957,6 +1961,12 @@ const video = $("#camera");
 
 function cameraHelp(error) {
   const message = String(error?.message || "").toLowerCase();
+  if (
+    location.protocol === "file:" &&
+    (error?.name === "NotAllowedError" || error?.name === "SecurityError")
+  ) {
+    return "当前浏览器拒绝本地文件使用摄像头。可直接改用在线 HTTPS 页面，或双击“启动圣诞树.bat”通过 localhost 打开。";
+  }
   if (error?.name === "NotAllowedError" && message.includes("system")) {
     return "系统已阻止浏览器使用摄像头，请在系统隐私设置中允许当前浏览器使用相机。";
   }
@@ -2198,13 +2208,6 @@ cameraButton.onclick = async () => {
     stopCamera();
     return;
   }
-  if (location.protocol === "file:") {
-    const message =
-      "本地文件模式无法使用摄像头。请双击“启动圣诞树.bat”，再通过 localhost 页面开启手势。";
-    hint.textContent = message;
-    toast(message, 9000);
-    return;
-  }
   if (!navigator.mediaDevices?.getUserMedia) {
     const message = "当前浏览器没有开放摄像头接口，请用 Chrome、Edge 或 Safari 打开这个页面。";
     hint.textContent = message;
@@ -2400,7 +2403,11 @@ try {
 } catch {}
 applyTheme(savedColor, { persist: !IS_APPRECIATION });
 setSpread(0, false);
-$("#mode-badge").textContent = IS_APPRECIATION ? "欣赏模式" : "开发者模式";
+$("#mode-badge").textContent = IS_APPRECIATION
+  ? "欣赏模式"
+  : SHARED_DEVELOPER
+    ? "朋友开发者版"
+    : "开发者模式";
 $("#export").onclick = exportAppreciation;
 window.hanabi = {
   applyTheme,
@@ -2410,6 +2417,12 @@ window.hanabi = {
   exportAppreciation,
   getRotation: () => targetRotation,
   getPhotoHitboxes: () => photoHitboxes,
+  getState: () => ({
+    mode: MODE,
+    color: theme.base,
+    message: particleText,
+    photos: serializePhotos(),
+  }),
   openPhoto,
   saveDeveloperDraft,
   setSpread,
