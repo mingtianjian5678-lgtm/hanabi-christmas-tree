@@ -727,6 +727,17 @@ const MODE =
   "developer";
 const IS_APPRECIATION = MODE === "appreciation";
 const BOOT_CONFIG = window.HANABI_CONFIG || null;
+try {
+  const shareParams = new URLSearchParams(location.search);
+  const requestedColor = shareParams.get("color");
+  const requestedMessage = shareParams.get("message");
+  if (BOOT_CONFIG && /^#[0-9a-f]{6}$/i.test(requestedColor || "")) {
+    BOOT_CONFIG.color = requestedColor;
+  }
+  if (BOOT_CONFIG && requestedMessage !== null) {
+    BOOT_CONFIG.message = requestedMessage.slice(0, 20);
+  }
+} catch {}
 const SHARED_DEVELOPER = Boolean(BOOT_CONFIG?.sharedDeveloper);
 const DRAFT_KEY = BOOT_CONFIG?.draftKey || "hanabi-developer-draft-v1";
 const GESTURE_CDN_BASE =
@@ -1051,8 +1062,12 @@ async function exportAppreciation() {
   const draft = currentDeveloperDraft();
   const configuredShareUrl =
     window.HANABI_SHARE_URL || BOOT_CONFIG?.shareUrl || "";
-  const shareUrl =
-    configuredShareUrl || new URL("./?v=share", location.href).href;
+  const shareLink = new URL(
+    configuredShareUrl || new URL("./?v=share", location.href).href,
+  );
+  shareLink.searchParams.set("color", theme.base);
+  shareLink.searchParams.set("message", particleText);
+  const shareUrl = shareLink.href;
 
   const copyShareLink = async () => {
     try {
