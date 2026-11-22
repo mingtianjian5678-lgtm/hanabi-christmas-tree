@@ -3,6 +3,9 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta http-equiv="cache-control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="pragma" content="no-cache">
+  <meta http-equiv="expires" content="0">
   <meta name="theme-color" content="#07090e">
   <title>花火 · 正在打开欣赏版</title>
   <style>
@@ -103,7 +106,8 @@
             } catch {}
           }, 350);
         }
-        return;
+        status.textContent = "微信内摄像头受限，正在直接打开照片欣赏版…";
+        await new Promise((resolve) => setTimeout(resolve, 1800));
       }
 
       if (!snapshotId) {
@@ -129,6 +133,8 @@
             } catch {}
           }, 350);
         }
+        await new Promise((resolve) => setTimeout(resolve, 1800));
+        location.replace(defaultUrl.href);
         return;
       }
 
@@ -145,7 +151,7 @@
       const cachedDraft = localStorage.getItem("hanabi-viewer-draft-v1");
       if (cachedId === snapshotId && cachedDraft) {
         location.replace(
-          "./developer.html?mode=appreciation&v=20261122-snapshot5",
+          "./developer.html?mode=appreciation&v=20261123-snapshot6",
         );
         return;
       }
@@ -171,7 +177,7 @@
             );
             localStorage.setItem("hanabi-viewer-snapshot-id", snapshotId);
             location.replace(
-              "./developer.html?mode=appreciation&v=20261122-snapshot5",
+              "./developer.html?mode=appreciation&v=20261123-snapshot6",
             );
             return;
           }
