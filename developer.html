@@ -883,6 +883,7 @@ let previousHandX = null;
 let lastHandSeenAt = 0;
 const handCursor = { active: false, x: 0, y: 0 };
 let toastTimer;
+let snapshotBusy = false;
 
 const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
 const lerp = (start, end, progress) => start + (end - start) * progress;
@@ -1012,6 +1013,31 @@ function currentDeveloperDraft() {
   };
 }
 
+async function optimizeDraftForShare(draft) {
+  if (!Array.isArray(draft.photos) || !draft.photos.length) return draft;
+  const optimizedPhotos = [];
+  for (let index = 0; index < draft.photos.length; index++) {
+    const item = draft.photos[index];
+    const image = photos[index]?.image;
+    if (!image?.complete || !image.naturalWidth || !image.naturalHeight) {
+      optimizedPhotos.push(item);
+      continue;
+    }
+    const scale = Math.min(1, 720 / Math.max(image.naturalWidth, image.naturalHeight));
+    const output = document.createElement("canvas");
+    output.width = Math.max(1, Math.round(image.naturalWidth * scale));
+    output.height = Math.max(1, Math.round(image.naturalHeight * scale));
+    output.getContext("2d").drawImage(image, 0, 0, output.width, output.height);
+    let src = output.toDataURL("image/webp", 0.68);
+    if (!src.startsWith("data:image/webp")) {
+      src = output.toDataURL("image/jpeg", 0.74);
+    }
+    optimizedPhotos.push({ ...item, src });
+    await new Promise((resolve) => setTimeout(resolve, 0));
+  }
+  return { ...draft, photos: optimizedPhotos };
+}
+
 function saveDeveloperDraft() {
   if (IS_APPRECIATION) return false;
   try {
@@ -1085,6 +1111,10 @@ ${body.innerHTML}
 }
 
 async function exportAppreciation() {
+  if (snapshotBusy) {
+    toast("上一个欣赏链接正在生成，请稍候");
+    return;
+  }
   const draft = currentDeveloperDraft();
   const configuredShareUrl =
     window.HANABI_SHARE_URL || BOOT_CONFIG?.shareUrl || "";
@@ -1125,16 +1155,23 @@ async function exportAppreciation() {
     }
   };
 
-  const copiedPromise = copyShareLink();
+  const copied = await copyShareLink();
   if (saveApi) {
+    snapshotBusy = true;
+    toast(
+      copied
+        ? "链接已复制，正在生成照片…"
+        : "正在生成照片欣赏链接…",
+      8000,
+    );
     try {
+      const optimizedDraft = await optimizeDraftForShare(draft);
       const response = await fetch(saveApi, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id: saveId, draft }),
+        body: JSON.stringify({ id: saveId, draft: optimizedDraft }),
       });
       if (!response.ok) throw new Error(`Snapshot upload failed: ${response.status}`);
-      const copied = await copiedPromise;
       toast(
         copied
           ? "独立欣赏链接已保存并复制到剪贴板"
@@ -1144,7 +1181,6 @@ async function exportAppreciation() {
       return;
     } catch (error) {
       console.error("Snapshot save failed:", error);
-      const copied = await copiedPromise;
       toast(
         copied
           ? "链接已复制，但照片快照上传失败；请确认同步服务开启后重新保存"
@@ -1152,11 +1188,12 @@ async function exportAppreciation() {
         10000,
       );
       return;
+    } finally {
+      snapshotBusy = false;
     }
   }
 
   if (configuredShareUrl) {
-    const copied = await copiedPromise;
     toast(
       copied
         ? "永久欣赏链接已复制到剪贴板"
@@ -2070,13 +2107,17 @@ $("#photo-input").onchange = async (event) => {
     try {
       const bitmap = await createImageBitmap(file);
       const compressed = document.createElement("canvas");
-      const scale = Math.min(1, 900 / Math.max(bitmap.width, bitmap.height));
+      const scale = Math.min(1, 800 / Math.max(bitmap.width, bitmap.height));
       compressed.width = Math.max(1, Math.round(bitmap.width * scale));
       compressed.height = Math.max(1, Math.round(bitmap.height * scale));
       compressed.getContext("2d").drawImage(bitmap, 0, 0, compressed.width, compressed.height);
       bitmap.close();
       const image = new Image();
-      image.src = compressed.toDataURL("image/jpeg", 0.82);
+      let encoded = compressed.toDataURL("image/webp", 0.74);
+      if (!encoded.startsWith("data:image/webp")) {
+        encoded = compressed.toDataURL("image/jpeg", 0.8);
+      }
+      image.src = encoded;
       await image.decode();
       images.push(image);
     } catch {
