@@ -334,9 +334,7 @@ h1 {
 body[data-mode="appreciation"] #photos,
 body[data-mode="appreciation"] .color-control,
 body[data-mode="appreciation"] #export,
-body[data-mode="appreciation"] .message-editor,
-body[data-mode="appreciation"] .toolbar,
-body[data-mode="appreciation"] .camera-panel {
+body[data-mode="appreciation"] .message-editor {
   display: none !important;
 }
 
@@ -719,7 +717,7 @@ small span {
     </footer>
 
     <div id="toast" role="status" aria-live="polite"></div>
-    <script>window.HANABI_CONFIG = { standalone: true };</script>
+<script>window.HANABI_CONFIG = { standalone: true, shareUrl: "https://mingtianjian5678-lgtm.github.io/hanabi-christmas-tree/share.html" };</script>
 <script type="module" data-hanabi-app>
 const $ = (selector) => document.querySelector(selector);
 const MODE =
@@ -967,18 +965,22 @@ function serializePhotos() {
   }));
 }
 
+function currentDeveloperDraft() {
+  return {
+    version: 1,
+    color: theme.base,
+    message: particleText,
+    photos: serializePhotos(),
+    updatedAt: Date.now(),
+  };
+}
+
 function saveDeveloperDraft() {
   if (IS_APPRECIATION) return false;
   try {
     localStorage.setItem(
       DRAFT_KEY,
-      JSON.stringify({
-        version: 1,
-        color: theme.base,
-        message: particleText,
-        photos: serializePhotos(),
-        updatedAt: Date.now(),
-      }),
+      JSON.stringify(currentDeveloperDraft()),
     );
     return true;
   } catch (error) {
@@ -1046,6 +1048,65 @@ ${body.innerHTML}
 }
 
 async function exportAppreciation() {
+  const draft = currentDeveloperDraft();
+  const configuredShareUrl =
+    window.HANABI_SHARE_URL || BOOT_CONFIG?.shareUrl || "";
+  const shareUrl =
+    configuredShareUrl || new URL("./?v=share", location.href).href;
+
+  const copyShareLink = async () => {
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(shareUrl);
+        return true;
+      }
+    } catch {}
+    try {
+      const field = document.createElement("textarea");
+      field.value = shareUrl;
+      field.setAttribute("readonly", "");
+      field.style.position = "fixed";
+      field.style.opacity = "0";
+      document.body.appendChild(field);
+      field.select();
+      const copied = document.execCommand("copy");
+      field.remove();
+      return copied;
+    } catch {
+      return false;
+    }
+  };
+
+  const copiedPromise = copyShareLink();
+  try {
+    const response = await fetch("./api/draft", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(draft),
+    });
+    if (response.ok) {
+      const copied = await copiedPromise;
+      toast(
+        copied
+          ? "保存成功，欣赏链接已复制到剪贴板"
+          : `保存成功：${shareUrl}`,
+        copied ? 5000 : 12000,
+      );
+      return;
+    }
+  } catch {}
+
+  if (configuredShareUrl) {
+    const copied = await copiedPromise;
+    toast(
+      copied
+        ? "永久欣赏链接已复制到剪贴板"
+        : `永久欣赏链接：${shareUrl}`,
+      copied ? 5000 : 12000,
+    );
+    return;
+  }
+
   try {
     const html = await createAppreciationHTML();
     const blob = new Blob([html], { type: "text/html;charset=utf-8" });
@@ -1063,7 +1124,7 @@ async function exportAppreciation() {
     link.click();
     link.remove();
     setTimeout(() => URL.revokeObjectURL(url), 1000);
-    toast("欣赏版 HTML 已生成，可以直接发送给微信好友");
+    toast("当前页面未连接分享服务，已改为导出欣赏版 HTML");
   } catch (error) {
     console.error("Export failed:", error);
     toast("欣赏版生成失败，请刷新页面后重试");
