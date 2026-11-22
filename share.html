@@ -75,7 +75,6 @@
       const ua = navigator.userAgent || "";
       const isWeChat = /MicroMessenger/i.test(ua);
       const isAndroid = /Android/i.test(ua);
-      const isIOS = /iPhone|iPad|iPod/i.test(ua);
       const status = document.querySelector(".normal");
       const manualLink = document.getElementById("manual-link");
       const externalUrl = new URL(currentUrl.href);
@@ -99,12 +98,6 @@
             "category=android.intent.category.BROWSABLE;" +
             `S.browser_fallback_url=${fallback};end`;
           setTimeout(() => { location.href = intent; }, 350);
-        } else if (isIOS) {
-          setTimeout(() => {
-            try {
-              location.href = `x-web-search://?${encodeURIComponent(externalUrl.href)}`;
-            } catch {}
-          }, 350);
         }
         status.textContent = "微信内摄像头受限，正在直接打开照片欣赏版…";
         await new Promise((resolve) => setTimeout(resolve, 1800));
@@ -126,12 +119,6 @@
             "category=android.intent.category.BROWSABLE;" +
             `S.browser_fallback_url=${fallback};end`;
           setTimeout(() => { location.href = intent; }, 350);
-        } else if (isIOS) {
-          setTimeout(() => {
-            try {
-              location.href = `x-web-search://?${encodeURIComponent(defaultUrl.href)}`;
-            } catch {}
-          }, 350);
         }
         await new Promise((resolve) => setTimeout(resolve, 1800));
         location.replace(defaultUrl.href);
