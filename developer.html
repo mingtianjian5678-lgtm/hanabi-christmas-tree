@@ -728,7 +728,8 @@ const MODE =
 const IS_APPRECIATION = MODE === "appreciation";
 const BOOT_CONFIG = window.HANABI_CONFIG || null;
 const FRESH_DEVELOPER_START =
-  Boolean(window.HANABI_FRESH_START) || Boolean(BOOT_CONFIG?.freshStart);
+  !IS_APPRECIATION &&
+  new URLSearchParams(location.search).get("restore") !== "1";
 try {
   const shareParams = new URLSearchParams(location.search);
   const requestedColor = shareParams.get("color");
@@ -758,6 +759,18 @@ try {
       ? null
       : developerDraft;
 } catch {}
+if (FRESH_DEVELOPER_START) {
+  try {
+    localStorage.removeItem(DRAFT_KEY);
+    localStorage.removeItem(VIEWER_DRAFT_KEY);
+    localStorage.removeItem(BOOT_CONFIG?.colorKey || "hanabi-theme-color");
+    const legacyColorKey =
+      BOOT_CONFIG?.legacyColorKey === ""
+        ? ""
+        : BOOT_CONFIG?.legacyColorKey || "christmas-tree-theme-color";
+    if (legacyColorKey) localStorage.removeItem(legacyColorKey);
+  } catch {}
+}
 const DEFAULT_MESSAGE = "❤";
 let particleText = BOOT_CONFIG?.message || storedDraft?.message || DEFAULT_MESSAGE;
 let textParticles = [];
@@ -1334,8 +1347,10 @@ function photosFromConfig(items) {
 
 const initialPhotoConfig = BOOT_CONFIG?.photos || storedDraft?.photos;
 let photos =
-  photosFromConfig(initialPhotoConfig) ||
-  layoutPhotos(Array.from({ length: 8 }, (_, index) => postcard(index)));
+  FRESH_DEVELOPER_START
+    ? []
+    : photosFromConfig(initialPhotoConfig) ||
+      layoutPhotos(Array.from({ length: 8 }, (_, index) => postcard(index)));
 
 function project(x, y, z) {
   const cos = Math.cos(rotation);
