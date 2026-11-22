@@ -2536,6 +2536,9 @@ returnDeveloperButton.onclick = () => {
   location.assign(next);
 };
 
+if (BOOT_CONFIG?.shareUrl && !IS_APPRECIATION) {
+  $("#export").textContent = "保存并复制链接";
+}
 $("#export").onclick = exportAppreciation;
 window.hanabi = {
   applyTheme,
