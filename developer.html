@@ -717,7 +717,7 @@ small span {
     </footer>
 
     <div id="toast" role="status" aria-live="polite"></div>
-<script>window.HANABI_CONFIG = { standalone: true, shareUrl: "https://mingtianjian5678-lgtm.github.io/hanabi-christmas-tree/share.html", saveApi: "https://preferences-zoloft-thank-stay.trycloudflare.com/api/draft" };</script>
+<script>window.HANABI_CONFIG = { standalone: true, freshStart: true, shareUrl: "https://mingtianjian5678-lgtm.github.io/hanabi-christmas-tree/share.html", saveApi: "https://preferences-zoloft-thank-stay.trycloudflare.com/api/draft" };</script>
 <script type="module" data-hanabi-app>
 const $ = (selector) => document.querySelector(selector);
 const MODE =
@@ -727,6 +727,8 @@ const MODE =
   "developer";
 const IS_APPRECIATION = MODE === "appreciation";
 const BOOT_CONFIG = window.HANABI_CONFIG || null;
+const FRESH_DEVELOPER_START =
+  Boolean(window.HANABI_FRESH_START) || Boolean(BOOT_CONFIG?.freshStart);
 try {
   const shareParams = new URLSearchParams(location.search);
   const requestedColor = shareParams.get("color");
@@ -740,13 +742,21 @@ try {
 } catch {}
 const SHARED_DEVELOPER = Boolean(BOOT_CONFIG?.sharedDeveloper);
 const DRAFT_KEY = BOOT_CONFIG?.draftKey || "hanabi-developer-draft-v1";
+const VIEWER_DRAFT_KEY = "hanabi-viewer-draft-v1";
 const GESTURE_CDN_BASE =
   "https://cdn.jsdelivr.net/gh/mingtianjian5678-lgtm/hanabi-christmas-tree@hanabi-model-v1/vendor";
 document.body.dataset.mode = MODE;
 
 let storedDraft = null;
+let viewerDraft = null;
 try {
-  storedDraft = JSON.parse(localStorage.getItem(DRAFT_KEY) || "null");
+  const developerDraft = JSON.parse(localStorage.getItem(DRAFT_KEY) || "null");
+  viewerDraft = JSON.parse(localStorage.getItem(VIEWER_DRAFT_KEY) || "null");
+  storedDraft = IS_APPRECIATION
+    ? viewerDraft || developerDraft
+    : FRESH_DEVELOPER_START
+      ? null
+      : developerDraft;
 } catch {}
 const DEFAULT_MESSAGE = "❤";
 let particleText = BOOT_CONFIG?.message || storedDraft?.message || DEFAULT_MESSAGE;
