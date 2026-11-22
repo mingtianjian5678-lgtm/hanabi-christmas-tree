@@ -717,7 +717,7 @@ small span {
     </footer>
 
     <div id="toast" role="status" aria-live="polite"></div>
-<script>window.HANABI_CONFIG = { standalone: true, shareUrl: "https://mingtianjian5678-lgtm.github.io/hanabi-christmas-tree/share.html" };</script>
+<script>window.HANABI_CONFIG = { standalone: true, shareUrl: "https://mingtianjian5678-lgtm.github.io/hanabi-christmas-tree/share.html", saveApi: "https://preferences-zoloft-thank-stay.trycloudflare.com/api/draft" };</script>
 <script type="module" data-hanabi-app>
 const $ = (selector) => document.querySelector(selector);
 const MODE =
@@ -1062,12 +1062,19 @@ async function exportAppreciation() {
   const draft = currentDeveloperDraft();
   const configuredShareUrl =
     window.HANABI_SHARE_URL || BOOT_CONFIG?.shareUrl || "";
-  const shareLink = new URL(
-    configuredShareUrl || new URL("./?v=share", location.href).href,
-  );
-  shareLink.searchParams.set("color", theme.base);
-  shareLink.searchParams.set("message", particleText);
-  const shareUrl = shareLink.href;
+  const saveApi = window.HANABI_SAVE_API || BOOT_CONFIG?.saveApi || "";
+  const shareBase =
+    configuredShareUrl || new URL("./share.html", location.href).href;
+  const saveId = `${Date.now().toString(36)}-${Math.random()
+    .toString(36)
+    .slice(2, 10)}`;
+  const snapshotShareLink = new URL(shareBase);
+  snapshotShareLink.searchParams.set("id", saveId);
+  const queryShareLink = new URL(shareBase);
+  queryShareLink.searchParams.set("color", theme.base);
+  queryShareLink.searchParams.set("message", particleText);
+  queryShareLink.searchParams.set("v", saveId);
+  const shareUrl = (saveApi ? snapshotShareLink : queryShareLink).href;
 
   const copyShareLink = async () => {
     try {
@@ -1093,23 +1100,34 @@ async function exportAppreciation() {
   };
 
   const copiedPromise = copyShareLink();
-  try {
-    const response = await fetch("./api/draft", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(draft),
-    });
-    if (response.ok) {
+  if (saveApi) {
+    try {
+      const response = await fetch(saveApi, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: saveId, draft }),
+      });
+      if (!response.ok) throw new Error(`Snapshot upload failed: ${response.status}`);
       const copied = await copiedPromise;
       toast(
         copied
-          ? "保存成功，欣赏链接已复制到剪贴板"
-          : `保存成功：${shareUrl}`,
+          ? "独立欣赏链接已保存并复制到剪贴板"
+          : `独立欣赏链接：${shareUrl}`,
         copied ? 5000 : 12000,
       );
       return;
+    } catch (error) {
+      console.error("Snapshot save failed:", error);
+      const copied = await copiedPromise;
+      toast(
+        copied
+          ? "链接已复制，但照片快照上传失败；请确认同步服务开启后重新保存"
+          : "照片快照上传失败，请确认同步服务开启后重试",
+        10000,
+      );
+      return;
     }
-  } catch {}
+  }
 
   if (configuredShareUrl) {
     const copied = await copiedPromise;
@@ -2551,7 +2569,10 @@ returnDeveloperButton.onclick = () => {
   location.assign(next);
 };
 
-if (BOOT_CONFIG?.shareUrl && !IS_APPRECIATION) {
+if (
+  (BOOT_CONFIG?.shareUrl || BOOT_CONFIG?.saveApi) &&
+  !IS_APPRECIATION
+) {
   $("#export").textContent = "保存并复制链接";
 }
 $("#export").onclick = exportAppreciation;

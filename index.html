@@ -65,37 +65,108 @@
     <a id="manual-link" href="./appreciation.html">立即打开欣赏版</a>
   </main>
   <script>
-    (() => {
-      const targetUrl = new URL("./appreciation.html", location.href);
-      targetUrl.search = new URL(location.href).search;
-      const target = targetUrl.href;
+    (async () => {
+      const currentUrl = new URL(location.href);
+      const params = currentUrl.searchParams;
+      const snapshotId = params.get("id");
       const ua = navigator.userAgent || "";
       const isWeChat = /MicroMessenger/i.test(ua);
       const isAndroid = /Android/i.test(ua);
       const isIOS = /iPhone|iPad|iPod/i.test(ua);
-      document.getElementById("manual-link").href = target;
+      const status = document.querySelector(".normal");
+      const manualLink = document.getElementById("manual-link");
+      const externalUrl = new URL(currentUrl.href);
+      externalUrl.searchParams.set("open", "1");
+      const defaultUrl = new URL("./appreciation.html", location.href);
+      defaultUrl.search = currentUrl.search;
+      defaultUrl.searchParams.delete("id");
+      defaultUrl.searchParams.delete("open");
 
-      if (!isWeChat) {
-        location.replace(target);
+      if (snapshotId && !params.has("open") && isWeChat) {
+        document.body.classList.add("wechat");
+        manualLink.href = externalUrl.href;
+        status.textContent = "正在准备你的专属欣赏版…";
+
+        if (isAndroid) {
+          const parsed = new URL(externalUrl.href);
+          const fallback = encodeURIComponent(externalUrl.href);
+          const intent =
+            `intent://${parsed.host}${parsed.pathname}${parsed.search}#Intent;` +
+            "scheme=https;action=android.intent.action.VIEW;" +
+            "category=android.intent.category.BROWSABLE;" +
+            `S.browser_fallback_url=${fallback};end`;
+          setTimeout(() => { location.href = intent; }, 350);
+        } else if (isIOS) {
+          setTimeout(() => {
+            try {
+              location.href = `x-web-search://?${encodeURIComponent(externalUrl.href)}`;
+            } catch {}
+          }, 350);
+        }
         return;
       }
 
-      document.body.classList.add("wechat");
-
-      if (isAndroid) {
-        const parsed = new URL(target);
-        const fallback = encodeURIComponent(target);
-        const intent =
-          `intent://${parsed.host}${parsed.pathname}${parsed.search}#Intent;` +
-          "scheme=https;action=android.intent.action.VIEW;" +
-          "category=android.intent.category.BROWSABLE;" +
-          `S.browser_fallback_url=${fallback};end`;
-        setTimeout(() => { location.href = intent; }, 350);
-      } else if (isIOS) {
-        setTimeout(() => {
-          try { location.href = `x-web-search://?${encodeURIComponent(target)}`; } catch {}
-        }, 350);
+      if (!snapshotId) {
+        manualLink.href = defaultUrl.href;
+        if (!isWeChat) {
+          location.replace(defaultUrl.href);
+          return;
+        }
+        document.body.classList.add("wechat");
+        if (isAndroid) {
+          const parsed = new URL(defaultUrl.href);
+          const fallback = encodeURIComponent(defaultUrl.href);
+          const intent =
+            `intent://${parsed.host}${parsed.pathname}${parsed.search}#Intent;` +
+            "scheme=https;action=android.intent.action.VIEW;" +
+            "category=android.intent.category.BROWSABLE;" +
+            `S.browser_fallback_url=${fallback};end`;
+          setTimeout(() => { location.href = intent; }, 350);
+        } else if (isIOS) {
+          setTimeout(() => {
+            try {
+              location.href = `x-web-search://?${encodeURIComponent(defaultUrl.href)}`;
+            } catch {}
+          }, 350);
+        }
+        return;
       }
+
+      manualLink.href = defaultUrl.href;
+      manualLink.textContent = "打开默认欣赏版";
+      document.body.classList.remove("wechat");
+
+      if (!/^[a-z0-9-]{8,48}$/.test(snapshotId)) {
+        status.textContent = "这个欣赏链接格式不正确。";
+        return;
+      }
+
+      const rawUrl =
+        "https://raw.githubusercontent.com/mingtianjian5678-lgtm/" +
+        `hanabi-christmas-tree/share-data/snapshots/${snapshotId}.json`;
+      for (let attempt = 0; attempt < 16; attempt++) {
+        try {
+          status.textContent =
+            attempt === 0 ? "正在载入你的照片…" : "照片正在生成，请稍候…";
+          const response = await fetch(`${rawUrl}?t=${Date.now()}`, {
+            cache: "no-store",
+          });
+          if (response.ok) {
+            const draft = await response.json();
+            if (!draft || !Array.isArray(draft.photos)) {
+              throw new Error("Invalid snapshot");
+            }
+            localStorage.setItem(
+              "hanabi-developer-draft-v1",
+              JSON.stringify(draft),
+            );
+            location.replace("./developer.html?mode=appreciation");
+            return;
+          }
+        } catch {}
+        await new Promise((resolve) => setTimeout(resolve, 2000));
+      }
+      status.textContent = "这个欣赏版暂时无法载入，请稍后刷新。";
     })();
   </script>
 </body>
